@@ -1,4 +1,4 @@
 snomed-utilities
 ================
 
-Java libraries for application working with SNOMED CT.
+Java libraries for applications working with SNOMED CT.
