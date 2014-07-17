@@ -38,7 +38,12 @@ public class SchemaFactory {
 				String fileType = nameParts[0];
 				String contentType = nameParts[1];
 
-				if (fileType.equals(REL_2)) {
+				boolean relFile = fileType.equals(REL_2);
+				boolean effectiveTimeMandatory = !relFile;
+
+				DataType sctidType;
+				if (relFile) {
+					sctidType = DataType.SCTID_OR_UUID;
 					if (contentType.endsWith(REFSET)) {
 						// Reset
 						fileType = DER_2;
@@ -47,17 +52,19 @@ public class SchemaFactory {
 						fileType = SCT_2;
 					}
 					filenameNoExtension = filenameNoExtension.replace(REL_2, fileType);
+				} else {
+					sctidType = DataType.SCTID;
 				}
 
 				if (fileType.equals(DER_2)) {
 					if (contentType.equals("Refset")) {
 						// Simple Refset
-						schema = createSimpleRefsetSchema(filenameNoExtension);
+						schema = createSimpleRefsetSchema(filenameNoExtension, relFile, sctidType);
 					} else if (contentType.endsWith("Refset")) {
 						// Other Refset
 
 						// Start with Simple Refset
-						schema = createSimpleRefsetSchema(filenameNoExtension);
+						schema = createSimpleRefsetSchema(filenameNoExtension, relFile, sctidType);
 
 						// Use the contentType prefix characters for datatypes of additional fields without field names at this point.
 						char[] additionalFieldTypes = contentType.replace("Refset", "").toCharArray();
@@ -66,7 +73,7 @@ public class SchemaFactory {
 							DataType type;
 							switch (additionalFieldType) {
 								case REFSET_FILENAME_CONCEPT_FIELD:
-									type = DataType.SCTID;
+									type = sctidType;
 									break;
 								case REFSET_FILENAME_INTEGER_FIELD:
 									type = DataType.INTEGER;
@@ -86,46 +93,46 @@ public class SchemaFactory {
 				} else if (fileType.equals(SCT_2)) {
 					if (contentType.equals("Concept")) {
 						schema = new TableSchema(ComponentType.CONCEPT, filenameNoExtension)
-								.field("id", DataType.SCTID)
-								.field("effectiveTime", DataType.TIME)
+								.field("id", sctidType)
+								.field("effectiveTime", DataType.TIME, effectiveTimeMandatory)
 								.field("active", DataType.BOOLEAN)
-								.field("moduleId", DataType.SCTID)
-								.field("definitionStatusId", DataType.SCTID);
+								.field("moduleId", sctidType)
+								.field("definitionStatusId", sctidType);
 
 					} else if (contentType.equals("Description")) {
 						schema = new TableSchema(ComponentType.DESCRIPTION, filenameNoExtension)
-								.field("id", DataType.SCTID)
-								.field("effectiveTime", DataType.TIME)
+								.field("id", sctidType)
+								.field("effectiveTime", DataType.TIME, effectiveTimeMandatory)
 								.field("active", DataType.BOOLEAN)
-								.field("moduleId", DataType.SCTID)
-								.field("conceptId", DataType.SCTID)
+								.field("moduleId", sctidType)
+								.field("conceptId", sctidType)
 								.field("languageCode", DataType.STRING)
-								.field("typeId", DataType.SCTID)
+								.field("typeId", sctidType)
 								.field("term", DataType.STRING)
-								.field("caseSignificanceId", DataType.SCTID);
+								.field("caseSignificanceId", sctidType);
 
 					} else if (contentType.equals("StatedRelationship") || contentType.equals("Relationship")) {
 						ComponentType componentType = contentType.equals("StatedRelationship") ? ComponentType.STATED_RELATIONSHIP : ComponentType.RELATIONSHIP;
 						schema = new TableSchema(componentType, filenameNoExtension)
-								.field("id", DataType.SCTID)
-								.field("effectiveTime", DataType.TIME)
+								.field("id", sctidType)
+								.field("effectiveTime", DataType.TIME, effectiveTimeMandatory)
 								.field("active", DataType.BOOLEAN)
-								.field("moduleId", DataType.SCTID)
-								.field("sourceId", DataType.SCTID)
-								.field("destinationId", DataType.SCTID)
+								.field("moduleId", sctidType)
+								.field("sourceId", sctidType)
+								.field("destinationId", sctidType)
 								.field("relationshipGroup", DataType.INTEGER)
-								.field("typeId", DataType.SCTID)
-								.field("characteristicTypeId", DataType.SCTID)
-								.field("modifierId", DataType.SCTID);
+								.field("typeId", sctidType)
+								.field("characteristicTypeId", sctidType)
+								.field("modifierId", sctidType);
 
 					} else if (contentType.equals("Identifier")) {
 						schema = new TableSchema(ComponentType.IDENTIFIER, filenameNoExtension)
-								.field("identifierSchemeId", DataType.SCTID)
+								.field("identifierSchemeId", sctidType)
 								.field("alternateIdentifier", DataType.STRING)
-								.field("effectiveTime", DataType.TIME)
+								.field("effectiveTime", DataType.TIME, effectiveTimeMandatory)
 								.field("active", DataType.BOOLEAN)
-								.field("moduleId", DataType.SCTID)
-								.field("referencedComponentId", DataType.SCTID);
+								.field("moduleId", sctidType)
+								.field("referencedComponentId", sctidType);
 
 					} else {
 						LOGGER.info(NO_MATCH_PREFIX + "file type {} with Content type {} is not supported.", fileType, contentType);
@@ -153,14 +160,14 @@ public class SchemaFactory {
 		}
 	}
 
-	private TableSchema createSimpleRefsetSchema(String filenameNoExtension) {
+	private TableSchema createSimpleRefsetSchema(String filenameNoExtension, boolean relFile, DataType sctidType) {
 		return new TableSchema(ComponentType.REFSET, filenameNoExtension)
-								.field("id", DataType.UUID)
-								.field("effectiveTime", DataType.TIME)
+								.field("id", DataType.UUID, !relFile)
+								.field("effectiveTime", DataType.TIME, !relFile)
 								.field("active", DataType.BOOLEAN)
-								.field("moduleId", DataType.SCTID)
-								.field("refSetId", DataType.SCTID)
-								.field("referencedComponentId", DataType.SCTID);
+								.field("moduleId", sctidType)
+								.field("refSetId", sctidType)
+								.field("referencedComponentId", sctidType);
 	}
 
 }

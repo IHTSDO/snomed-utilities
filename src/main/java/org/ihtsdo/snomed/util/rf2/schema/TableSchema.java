@@ -23,6 +23,11 @@ public class TableSchema {
 		return this;
 	}
 
+	public TableSchema field(String name, DataType type, boolean mandatory) {
+		fields.add(new Field(name, type, mandatory));
+		return this;
+	}
+
 	public ComponentType getComponentType() {
 		return componentType;
 	}
