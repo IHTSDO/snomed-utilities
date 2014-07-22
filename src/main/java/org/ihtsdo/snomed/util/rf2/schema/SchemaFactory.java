@@ -166,7 +166,7 @@ public class SchemaFactory {
 								.field("effectiveTime", DataType.TIME, !relFile)
 								.field("active", DataType.BOOLEAN)
 								.field("moduleId", sctidType)
-								.field("refSetId", sctidType)
+								.field("refsetId", sctidType)
 								.field("referencedComponentId", sctidType);
 	}
 

@@ -18,7 +18,7 @@ public class SchemaFactoryTest {
 	@Test
 	public void testCreateSchemaBeanRelSimpleRefset() throws Exception {
 		String filename = "rel2_Refset_SimpleDelta_INT_20140831.txt";
-		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefSetId\treferencedComponentId";
+		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId";
 
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
@@ -33,7 +33,7 @@ public class SchemaFactoryTest {
 	@Test
 	public void testCreateSchemaBeanDerSimpleRefset() throws Exception {
 		String filename = "der2_Refset_SimpleDelta_INT_20140831.txt";
-		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefSetId\treferencedComponentId";
+		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId";
 
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
@@ -48,7 +48,7 @@ public class SchemaFactoryTest {
 	@Test
 	public void testCreateSchemaBeanRelAttributeValueRefset() throws Exception {
 		String filename = "rel2_cRefset_AttributeValueDelta_INT_20140831.txt";
-		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefSetId\treferencedComponentId\tvalueId";
+		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\tvalueId";
 
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
@@ -68,7 +68,7 @@ public class SchemaFactoryTest {
 	@Test
 	public void testCreateSchemaBeanDerAttributeValueRefset() throws Exception {
 		String filename = "der2_cRefset_AttributeValueDelta_INT_20140831.txt";
-		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefSetId\treferencedComponentId\tvalueId";
+		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\tvalueId";
 
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
@@ -88,7 +88,7 @@ public class SchemaFactoryTest {
 	@Test
 	public void testCreateSchemaBeanRelExtendedMapRefset() throws Exception {
 		String filename = "rel2_iisssccRefset_ExtendedMapDelta_INT_20140131.txt";
-		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefSetId\treferencedComponentId\t" +
+		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\t" +
 				"mapGroup\tmapPriority\tmapRule\tmapAdvice\tmapTarget\tcorrelationId\tmapCategoryId";
 
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
@@ -133,7 +133,7 @@ public class SchemaFactoryTest {
 	@Test
 	public void testCreateSchemaBeanDerExtendedMapRefset() throws Exception {
 		String filename = "der2_iisssccRefset_ExtendedMapDelta_INT_20140131.txt";
-		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefSetId\treferencedComponentId\t" +
+		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\t" +
 				"mapGroup\tmapPriority\tmapRule\tmapAdvice\tmapTarget\tcorrelationId\tmapCategoryId";
 
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
@@ -263,7 +263,7 @@ public class SchemaFactoryTest {
 		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
 		Assert.assertEquals(true, fields.get(3).isMandatory());
 
-		Assert.assertEquals("refSetId", fields.get(4).getName());
+		Assert.assertEquals("refsetId", fields.get(4).getName());
 		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
 		Assert.assertEquals(true, fields.get(4).isMandatory());
 
@@ -289,7 +289,7 @@ public class SchemaFactoryTest {
 		Assert.assertEquals(DataType.SCTID, fields.get(3).getType());
 		Assert.assertEquals(true, fields.get(3).isMandatory());
 
-		Assert.assertEquals("refSetId", fields.get(4).getName());
+		Assert.assertEquals("refsetId", fields.get(4).getName());
 		Assert.assertEquals(DataType.SCTID, fields.get(4).getType());
 		Assert.assertEquals(true, fields.get(4).isMandatory());
 
