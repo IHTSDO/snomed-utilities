@@ -239,6 +239,208 @@ public class SchemaFactoryTest {
 		Assert.assertEquals(true, fields.get(4).isMandatory());
 	}
 
+	@Test
+	public void testCreateSchemaBeanSctDescriptionPre() throws Exception {
+		String filename = "rel2_Description_Delta-en_INT_20140731.txt";
+
+		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
+
+		Assert.assertNotNull("tableSchema should not be null", schemaBean);
+
+		Assert.assertEquals(ComponentType.DESCRIPTION, schemaBean.getComponentType());
+		Assert.assertEquals("sct2_Description_Deltaen_INT_20140731", schemaBean.getTableName());
+		List<Field> fields = schemaBean.getFields();
+		Assert.assertEquals(9, fields.size());
+
+		Assert.assertEquals("id", fields.get(0).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(0).getType());
+		Assert.assertEquals(true, fields.get(0).isMandatory());
+
+		Assert.assertEquals("effectiveTime", fields.get(1).getName());
+		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
+		Assert.assertEquals(false, fields.get(1).isMandatory());
+
+		Assert.assertEquals("active", fields.get(2).getName());
+		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		Assert.assertEquals(true, fields.get(2).isMandatory());
+
+		Assert.assertEquals("moduleId", fields.get(3).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
+		Assert.assertEquals(true, fields.get(3).isMandatory());
+
+		Assert.assertEquals("conceptId", fields.get(4).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
+		Assert.assertEquals(true, fields.get(4).isMandatory());
+
+		Assert.assertEquals("languageCode", fields.get(5).getName());
+		Assert.assertEquals(DataType.STRING, fields.get(5).getType());
+		Assert.assertEquals(true, fields.get(5).isMandatory());
+
+		Assert.assertEquals("typeId", fields.get(6).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(6).getType());
+		Assert.assertEquals(true, fields.get(6).isMandatory());
+
+		Assert.assertEquals("term", fields.get(7).getName());
+		Assert.assertEquals(DataType.STRING, fields.get(7).getType());
+		Assert.assertEquals(true, fields.get(7).isMandatory());
+
+		Assert.assertEquals("caseSignificanceId", fields.get(8).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(8).getType());
+		Assert.assertEquals(true, fields.get(8).isMandatory());
+	}
+
+	@Test
+	public void testCreateSchemaBeanSctDescriptionPost() throws Exception {
+		String filename = "sct2_Description_Delta-en_INT_20140731.txt";
+
+		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
+
+		Assert.assertNotNull("tableSchema should not be null", schemaBean);
+
+		Assert.assertEquals(ComponentType.DESCRIPTION, schemaBean.getComponentType());
+		Assert.assertEquals("sct2_Description_Deltaen_INT_20140731", schemaBean.getTableName());
+		List<Field> fields = schemaBean.getFields();
+		Assert.assertEquals(9, fields.size());
+
+		Assert.assertEquals("id", fields.get(0).getName());
+		Assert.assertEquals(DataType.SCTID, fields.get(0).getType());
+		Assert.assertEquals(true, fields.get(0).isMandatory());
+
+		Assert.assertEquals("effectiveTime", fields.get(1).getName());
+		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
+		Assert.assertEquals(true, fields.get(1).isMandatory());
+		Assert.assertEquals(true, fields.get(1).isMandatory());
+
+		Assert.assertEquals("active", fields.get(2).getName());
+		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		Assert.assertEquals(true, fields.get(2).isMandatory());
+
+		Assert.assertEquals("moduleId", fields.get(3).getName());
+		Assert.assertEquals(DataType.SCTID, fields.get(3).getType());
+		Assert.assertEquals(true, fields.get(3).isMandatory());
+
+		Assert.assertEquals("conceptId", fields.get(4).getName());
+		Assert.assertEquals(DataType.SCTID, fields.get(4).getType());
+		Assert.assertEquals(true, fields.get(4).isMandatory());
+
+		Assert.assertEquals("languageCode", fields.get(5).getName());
+		Assert.assertEquals(DataType.STRING, fields.get(5).getType());
+		Assert.assertEquals(true, fields.get(5).isMandatory());
+
+		Assert.assertEquals("typeId", fields.get(6).getName());
+		Assert.assertEquals(DataType.SCTID, fields.get(6).getType());
+		Assert.assertEquals(true, fields.get(6).isMandatory());
+
+		Assert.assertEquals("term", fields.get(7).getName());
+		Assert.assertEquals(DataType.STRING, fields.get(7).getType());
+		Assert.assertEquals(true, fields.get(7).isMandatory());
+
+		Assert.assertEquals("caseSignificanceId", fields.get(8).getName());
+		Assert.assertEquals(DataType.SCTID, fields.get(8).getType());
+		Assert.assertEquals(true, fields.get(8).isMandatory());
+	}
+
+	@Test
+	public void testCreateSchemaBeanSctTextDefinitionPre() throws Exception {
+		String filename = "rel2_TextDefinition_Delta-en_INT_20140731.txt";
+
+		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
+
+		Assert.assertNotNull("tableSchema should not be null", schemaBean);
+
+		Assert.assertEquals(ComponentType.TEXT_DEFINITION, schemaBean.getComponentType());
+		Assert.assertEquals("sct2_TextDefinition_Deltaen_INT_20140731", schemaBean.getTableName());
+		List<Field> fields = schemaBean.getFields();
+		Assert.assertEquals(9, fields.size());
+
+		Assert.assertEquals("id", fields.get(0).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(0).getType());
+		Assert.assertEquals(true, fields.get(0).isMandatory());
+
+		Assert.assertEquals("effectiveTime", fields.get(1).getName());
+		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
+		Assert.assertEquals(false, fields.get(1).isMandatory());
+
+		Assert.assertEquals("active", fields.get(2).getName());
+		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		Assert.assertEquals(true, fields.get(2).isMandatory());
+
+		Assert.assertEquals("moduleId", fields.get(3).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
+		Assert.assertEquals(true, fields.get(3).isMandatory());
+
+		Assert.assertEquals("conceptId", fields.get(4).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
+		Assert.assertEquals(true, fields.get(4).isMandatory());
+
+		Assert.assertEquals("languageCode", fields.get(5).getName());
+		Assert.assertEquals(DataType.STRING, fields.get(5).getType());
+		Assert.assertEquals(true, fields.get(5).isMandatory());
+
+		Assert.assertEquals("typeId", fields.get(6).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(6).getType());
+		Assert.assertEquals(true, fields.get(6).isMandatory());
+
+		Assert.assertEquals("term", fields.get(7).getName());
+		Assert.assertEquals(DataType.STRING, fields.get(7).getType());
+		Assert.assertEquals(true, fields.get(7).isMandatory());
+
+		Assert.assertEquals("caseSignificanceId", fields.get(8).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(8).getType());
+		Assert.assertEquals(true, fields.get(8).isMandatory());
+	}
+
+	@Test
+	public void testCreateSchemaBeanSctTextDefinitionPost() throws Exception {
+		String filename = "sct2_TextDefinition_Delta-en_INT_20140731.txt";
+
+		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
+
+		Assert.assertNotNull("tableSchema should not be null", schemaBean);
+
+		Assert.assertEquals(ComponentType.TEXT_DEFINITION, schemaBean.getComponentType());
+		Assert.assertEquals("sct2_TextDefinition_Deltaen_INT_20140731", schemaBean.getTableName());
+		List<Field> fields = schemaBean.getFields();
+		Assert.assertEquals(9, fields.size());
+
+		Assert.assertEquals("id", fields.get(0).getName());
+		Assert.assertEquals(DataType.SCTID, fields.get(0).getType());
+		Assert.assertEquals(true, fields.get(0).isMandatory());
+
+		Assert.assertEquals("effectiveTime", fields.get(1).getName());
+		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
+		Assert.assertEquals(true, fields.get(1).isMandatory());
+		Assert.assertEquals(true, fields.get(1).isMandatory());
+
+		Assert.assertEquals("active", fields.get(2).getName());
+		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		Assert.assertEquals(true, fields.get(2).isMandatory());
+
+		Assert.assertEquals("moduleId", fields.get(3).getName());
+		Assert.assertEquals(DataType.SCTID, fields.get(3).getType());
+		Assert.assertEquals(true, fields.get(3).isMandatory());
+
+		Assert.assertEquals("conceptId", fields.get(4).getName());
+		Assert.assertEquals(DataType.SCTID, fields.get(4).getType());
+		Assert.assertEquals(true, fields.get(4).isMandatory());
+
+		Assert.assertEquals("languageCode", fields.get(5).getName());
+		Assert.assertEquals(DataType.STRING, fields.get(5).getType());
+		Assert.assertEquals(true, fields.get(5).isMandatory());
+
+		Assert.assertEquals("typeId", fields.get(6).getName());
+		Assert.assertEquals(DataType.SCTID, fields.get(6).getType());
+		Assert.assertEquals(true, fields.get(6).isMandatory());
+
+		Assert.assertEquals("term", fields.get(7).getName());
+		Assert.assertEquals(DataType.STRING, fields.get(7).getType());
+		Assert.assertEquals(true, fields.get(7).isMandatory());
+
+		Assert.assertEquals("caseSignificanceId", fields.get(8).getName());
+		Assert.assertEquals(DataType.SCTID, fields.get(8).getType());
+		Assert.assertEquals(true, fields.get(8).isMandatory());
+	}
+
 	@Test(expected = FileRecognitionException.class)
 	public void testCreateSchemaBeanBadNameRefset() throws Exception {
 		String filename = "rel2_aRefset_SimpleDelta_INT_20140831.txt";
