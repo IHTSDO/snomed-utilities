@@ -99,8 +99,8 @@ public class SchemaFactory {
 								.field("moduleId", sctidType)
 								.field("definitionStatusId", sctidType);
 
-					} else if (contentType.equals("Description")) {
-						schema = new TableSchema(ComponentType.DESCRIPTION, filenameNoExtension)
+					} else if (contentType.equals("Description") || contentType.equals("TextDefinition")) {
+						schema = new TableSchema(contentType.equals("Description") ? ComponentType.DESCRIPTION : ComponentType.TEXT_DEFINITION, filenameNoExtension)
 								.field("id", sctidType)
 								.field("effectiveTime", DataType.TIME, effectiveTimeMandatory)
 								.field("active", DataType.BOOLEAN)
