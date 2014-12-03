@@ -28,13 +28,15 @@ public class SchemaFactory {
 		// <FileType>_<ContentType>_<ContentSubType>_<Country|Namespace>_<VersionDate>.<Extension>
 		// See http://www.snomed.org/tig?t=fng2_convention
 
+
 		if (filename.endsWith(".txt")) {
 
 			String filenameNoExtension = filename.substring(0, filename.indexOf("."));
-
 			String[] nameParts = filenameNoExtension.split(FILE_NAME_SEPARATOR);
+
 			if (nameParts.length == 5) {
-				String fileType = nameParts[0];
+				// Ignore leading "x" (for a beta release) if present
+				String fileType = nameParts[0].startsWith("x") ? nameParts[0].substring(1) : nameParts[0];
 				String contentTypeString = nameParts[1];
 				ComponentType componentType = ComponentType.lookup(contentTypeString);
 
