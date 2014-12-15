@@ -31,6 +31,21 @@ public class SchemaFactoryTest {
 	}
 
 	@Test
+	public void testCreateSchemaBeanRelSimpleBetaRefset() throws Exception {
+		String filename = "xrel2_Refset_SimpleDelta_INT_20140831.txt";
+		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId";
+
+		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
+		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
+
+		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		Assert.assertEquals("der2_Refset_SimpleDelta_INT_20140831", schemaBean.getTableName());
+		List<Field> fields = schemaBean.getFields();
+		Assert.assertEquals(6, fields.size());
+		assertFirstSixRelSimpleRefsetFields(fields);
+	}
+
+	@Test
 	public void testCreateSchemaBeanDerSimpleRefset() throws Exception {
 		String filename = "der2_Refset_SimpleDelta_INT_20140831.txt";
 		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId";
@@ -88,6 +103,15 @@ public class SchemaFactoryTest {
 	@Test
 	public void testCreateSchemaBeanRelExtendedMapRefset() throws Exception {
 		String filename = "rel2_iisssccRefset_ExtendedMapDelta_INT_20140131.txt";
+		// First time standard release
+		testCreateSchemaBeanRelExtendedMapRefsetImpl(filename);
+
+		// Again as a beta release
+		testCreateSchemaBeanRelExtendedMapRefsetImpl("x" + filename);
+
+	}
+
+	private void testCreateSchemaBeanRelExtendedMapRefsetImpl(String filename) throws Exception {
 		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\t" +
 				"mapGroup\tmapPriority\tmapRule\tmapAdvice\tmapTarget\tcorrelationId\tmapCategoryId";
 

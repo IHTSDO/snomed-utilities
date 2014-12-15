@@ -33,7 +33,9 @@ public class TableSchema {
 	}
 
 	public String getTableName() {
-		return filenameNoExtension.replace("-", "");
+		// Table name will be the standard table name, without the beta release indicator
+		String fileName = filenameNoExtension.startsWith("x") ? filenameNoExtension.substring(1) : filenameNoExtension;
+		return fileName.replace("-", "");
 	}
 
 	public String getFilename() {
