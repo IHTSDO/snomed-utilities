@@ -4,8 +4,15 @@
 
 	<groupId>org.ihtsdo.snomed.util</groupId>
 	<artifactId>snomed-utilities</artifactId>
-	<version>1.0.7</version>
+	<version>1.0.8</version>
 	<name>SNOMED CT Utilities</name>
+
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>	
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
