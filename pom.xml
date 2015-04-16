@@ -4,7 +4,7 @@
 
 	<groupId>org.ihtsdo.snomed.util</groupId>
 	<artifactId>snomed-utilities</artifactId>
-	<version>1.0.8</version>
+	<version>1.0.9</version>
 	<name>SNOMED CT Utilities</name>
 
 	<licenses>
@@ -17,7 +17,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<slf4j.version>1.7.5</slf4j.version>
-		<spring.version>3.2.7.RELEASE</spring.version>
+		<spring.version>4.1.3.RELEASE</spring.version>
 	</properties>
 
 	<scm>
