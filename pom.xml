@@ -4,7 +4,7 @@
 
 	<groupId>org.ihtsdo.snomed.util</groupId>
 	<artifactId>snomed-utilities</artifactId>
-	<version>1.0.9-SNAPSHOT</version>
+	<version>1.0.9</version>
 	<name>SNOMED CT Utilities</name>
 
 	<licenses>
