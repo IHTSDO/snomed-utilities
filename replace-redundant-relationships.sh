@@ -35,6 +35,6 @@ then
   exit -1
 fi
 
-java -classpath ${executable}  org.ihtsdo.snomed.util.rf2.RelationshipProcessor ${sourceDir}/sct2_StatedRelationship_Snapshot_INT_${effectiveTime}.txt ${sourceDir}/sct2_Relationship_Snapshot_INT_${effectiveTime}.txt target/sct2_StatedRelationship_Snapshot_INT_{effectiveTime}.txt
+java -Xms4g -Xmx5g -classpath ${executable}  org.ihtsdo.snomed.util.rf2.RelationshipProcessor ${sourceDir}/sct2_StatedRelationship_Snapshot_INT_${effectiveTime}.txt ${sourceDir}/sct2_Relationship_Snapshot_INT_${effectiveTime}.txt target/sct2_StatedRelationship_Snapshot_INT_{effectiveTime}.txt
 
 

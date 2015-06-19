@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,8 +54,53 @@ public class RelationshipProcessor {
 		// Validation check that both trees only have 1 concept that has no parents
 		Concept.ensureParents(Relationship.CHARACTERISTIC.STATED);
 		Concept.ensureParents(Relationship.CHARACTERISTIC.INFERRED);
+
 		// Now for all the active stated relationships that don't exist as active rows in the inferred file,
 		// find a suitable replacement
+		findReplacements(statedRelationships, inferredRelationships);
+
+		// What progress have we made?
+		reportProgress(statedRelationships);
+	}
+
+	private void findReplacements(Map<String, Relationship> statedRelationships, Map<String, Relationship> inferredRelationships) {
+
+		for (Relationship thisStatedRelationship : statedRelationships.values()) {
+			// Does this relationship exist in the inferred file? If not, find it a replacement
+			if (!inferredRelationships.containsKey(thisStatedRelationship.getUuid())) {
+				thisStatedRelationship.setNeedsReplaced(true);
+				// Can we find an inferred relationship in the same group with the same type where the destination
+				// is a child of the stated relationship's destination?
+				Concept sourceInferred = Concept.getConcept(thisStatedRelationship.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
+				List<Relationship> replacements = sourceInferred.findMatchingRelationships(thisStatedRelationship.getTypeId(),
+						thisStatedRelationship.getGroup(), thisStatedRelationship.getDestinationConcept());
+				if (replacements.size() > 0) {
+					// Shouldn't matter which matching relationship we replace with.
+					thisStatedRelationship.setReplacement(replacements.get(0));
+				}
+			}
+		}
+
+	}
+
+	private void reportProgress(Map<String, Relationship> statedRelationships) {
+		long needsReplaced = 0;
+		long hasBeenReplaced = 0;
+
+		for (Relationship thisStatedRelationship : statedRelationships.values()) {
+
+			if (thisStatedRelationship.isNeedsReplaced()) {
+				needsReplaced++;
+			}
+
+			if (thisStatedRelationship.hasReplacement()) {
+				hasBeenReplaced++;
+			}
+		}
+
+		long remainder = needsReplaced - hasBeenReplaced;
+		LOGGER.info("Of the {} stated relationships, {} needed replaced, {} have been replaced, leaving {} to work with",
+				statedRelationships.size(), needsReplaced, hasBeenReplaced, remainder);
 
 	}
 
@@ -70,17 +116,19 @@ public class RelationshipProcessor {
 			String line;
 			boolean isFirstLine = true;
 			while ((line = br.readLine()) != null) {
-				Relationship r;
+
 				if (!isFirstLine) {
-					r = new Relationship(line, characteristic);
+					String[] lineItems = line.split(Relationship.FIELD_DELIMITER);
+					// Only store active relationships
+					if (lineItems[Relationship.IDX_ACTIVE].equals(Relationship.ACTIVE_FLAG)) {
+						Relationship r = new Relationship(lineItems, characteristic);
+						loadedRelationships.put(r.getUuid(), r);
+					}
 				} else {
 					isFirstLine = false;
 					continue;
 				}
 
-				if (r.isActive()) {
-					loadedRelationships.put(r.getUuid(), r);
-				}
 			}
 		}
 		return loadedRelationships;

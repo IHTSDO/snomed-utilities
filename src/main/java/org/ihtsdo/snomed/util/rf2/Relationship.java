@@ -23,12 +23,16 @@ public class Relationship {
 		}
 	}
 
-	Long sourceId;
+
 	Concept sourceConcept;
 	Concept destinationConcept;
-	Long destinationId;
+
 	Long typeId;
 	String uuid;
+	int group;
+	Relationship replacement = null;
+
+	boolean needsReplaced = false;
 
 	public static final int IDX_ID = 0;
 	public static final int IDX_EFFECTIVETIME = 1;
@@ -43,11 +47,12 @@ public class Relationship {
 
 	private String[] lineValues;
 
-	public Relationship(String line, CHARACTERISTIC characteristic) throws Exception {
-		lineValues = line.split(FIELD_DELIMITER);
+	// Was originally splitting the string in the constructor, but expensive to create object
+	// if active flag is zero, so check this before passing in
+	public Relationship(String[] lineValues, CHARACTERISTIC characteristic) throws Exception {
+		this.lineValues = lineValues;
 		typeId = new Long(getField(IDX_TYPEID));
-		sourceId = new Long(getField(IDX_SOURCEID));
-		destinationId = new Long(getField(IDX_DESTINATIONID));
+		group = Integer.parseInt(getField(IDX_RELATIONSHIPGROUP));
 		uuid = type5UuidFactory.get(
 				lineValues[IDX_SOURCEID] + lineValues[IDX_DESTINATIONID] + lineValues[IDX_TYPEID] + lineValues[IDX_RELATIONSHIPGROUP])
 				.toString();
@@ -61,14 +66,6 @@ public class Relationship {
 
 	String getField(int fieldIdx) {
 		return lineValues[fieldIdx];
-	}
-
-	public Long getSourceId() {
-		return sourceId;
-	}
-
-	public Long getDestinationId() {
-		return destinationId;
 	}
 
 	public Long getTypeId() {
@@ -97,6 +94,39 @@ public class Relationship {
 
 	public boolean isActive() {
 		return lineValues[IDX_ACTIVE].equals(ACTIVE_FLAG);
+	}
+
+	public boolean isNeedsReplaced() {
+		return needsReplaced;
+	}
+
+	public void setNeedsReplaced(boolean needsReplaced) {
+		this.needsReplaced = needsReplaced;
+	}
+
+	public boolean hasReplacement() {
+		return replacement != null;
+	}
+
+	public int getGroup() {
+		return this.group;
+	}
+
+	public boolean matchesTypeAndGroup(Long typeId, int group) {
+		return (this.group == group) && this.typeId.equals(typeId);
+	}
+
+	public void setReplacement(Relationship replacementRelationship) {
+		this.replacement = replacementRelationship;
+
+	}
+
+	public Long getSourceId() {
+		return new Long(lineValues[IDX_SOURCEID]);
+	}
+
+	public Long getDestinationId() {
+		return new Long(lineValues[IDX_DESTINATIONID]);
 	}
 
 }

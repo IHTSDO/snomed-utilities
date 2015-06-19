@@ -2,6 +2,7 @@ package org.ihtsdo.snomed.util.rf2;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +20,7 @@ public class Concept implements Comparable<Concept> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Concept.class);
 
 	Set<Concept> parents = new TreeSet<Concept>();
+	Set<Relationship> attributes = new HashSet<Relationship>();
 
 	public Concept(Long id) {
 		this.id = id;
@@ -57,6 +59,9 @@ public class Concept implements Comparable<Concept> {
 		if (relationship.isISA()) {
 			sourceConcept.parents.add(destinationConcept);
 		}
+
+		// But all relationships get recorded as attributes
+		sourceConcept.attributes.add(relationship);
 	}
 
 	/**
@@ -85,6 +90,60 @@ public class Concept implements Comparable<Concept> {
 	@Override
 	public int compareTo(Concept other) {
 		return this.id.compareTo(other.id);
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (other instanceof Concept) {
+			Concept otherConcept = (Concept) other;
+			return this.id.equals(otherConcept.id);
+		}
+		return false;
+	}
+
+	public static Concept getConcept(Long destinationId, CHARACTERISTIC characteristic) {
+		Map<Long, Concept> allConcepts = characteristic.equals(Relationship.CHARACTERISTIC.STATED) ? allStatedConcepts
+				: allInferredConcepts;
+		return allConcepts.get(destinationId);
+	}
+
+	public List<Relationship> findMatchingRelationships(Long typeId, int group, Concept statedDestinationConcept) {
+		// find relationships of this concept with the same type and group, and where the destination has the
+		// statedDestinationConcept as a parent.
+
+		// lets match on type and group first since it's cheap
+		List<Relationship> firstPassMatches = findMatchingRelationships(typeId, group);
+		List<Relationship> secondPassMatches = new ArrayList<Relationship>();
+
+		for (Relationship thisRelationship : firstPassMatches) {
+			if (thisRelationship.getDestinationConcept().hasParent(statedDestinationConcept)) {
+				secondPassMatches.add(thisRelationship);
+			}
+		}
+
+		return secondPassMatches;
+	}
+
+	private boolean hasParent(Concept targetConcept) {
+		// Recurse through my parents to find if one of them is the targetConcept
+		// Will stop at the root concept, returning false, as it has no parents
+		for (Concept thisParent : parents) {
+			if (thisParent.equals(targetConcept) || thisParent.hasParent(targetConcept)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public List<Relationship> findMatchingRelationships(Long typeId, int group) {
+		//find relationships of this concept with the same type and group
+		List<Relationship> matches = new ArrayList<Relationship>();
+		for (Relationship thisRelationship : attributes) {
+			if (thisRelationship.matchesTypeAndGroup(typeId, group)) {
+				matches.add(thisRelationship);
+			}
+		}
+		return matches;
 	}
 
 }
