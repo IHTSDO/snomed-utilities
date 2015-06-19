@@ -1,13 +1,22 @@
 package org.ihtsdo.snomed.util.rf2;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class Concept {
+import org.ihtsdo.snomed.util.rf2.Relationship.CHARACTERISTIC;
+import org.ihtsdo.snomed.util.rf2.schema.SchemaFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class Concept implements Comparable<Concept> {
 
 	private Long id;
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Concept.class);
 
 	Set<Concept> parents = new TreeSet<Concept>();
 
@@ -22,7 +31,6 @@ public class Concept {
 
 		Map<Long, Concept> allConcepts = characteristic.equals(Relationship.CHARACTERISTIC.STATED) ? allStatedConcepts
 				: allInferredConcepts;
-
 
 		// Do we know about the source concept?
 		Concept sourceConcept;
@@ -51,5 +59,32 @@ public class Concept {
 		}
 	}
 
+	/**
+	 * Loop through all concepts known in that graph and ensure only 1 (hopefully the root) has no parents.
+	 * 
+	 * @param stated
+	 */
+	public static void ensureParents(CHARACTERISTIC characteristic) {
+		Map<Long, Concept> allConcepts = characteristic.equals(Relationship.CHARACTERISTIC.STATED) ? allStatedConcepts
+				: allInferredConcepts;
+
+		List<Concept> noParents = new ArrayList<Concept>();
+		for (Concept thisConcept : allConcepts.values()) {
+			if (thisConcept.parents.size() == 0) {
+				noParents.add(thisConcept);
+			}
+		}
+
+		LOGGER.debug("The following concepts have no parent in graph {}: ", characteristic.toString());
+		for (Concept thisConcept : noParents) {
+			LOGGER.debug(thisConcept.id.toString());
+		}
+
+	}
+
+	@Override
+	public int compareTo(Concept other) {
+		return this.id.compareTo(other.id);
+	}
 
 }

@@ -85,7 +85,36 @@
 			</plugins>
 		</pluginManagement>
 	</build>
+	
+	<!-- Profile to construct a jar including dependencies for stand alone execution -->
+	<profiles>
+		<profile>
+			<id>stand-alone</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-shade-plugin</artifactId>
+						<version>2.4</version>
+						<executions>
+							<execution>
+								<phase>package</phase>
+								<goals>
+									<goal>shade</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<finalName>uber-${project.artifactId}-${project.version}</finalName>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>	
+	</profiles>
 
+	
+	
 	<repositories>
 		<repository>
 			<id>ihtsdo-public-nexus</id>
