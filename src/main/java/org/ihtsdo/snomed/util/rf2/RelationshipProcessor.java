@@ -4,12 +4,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.ihtsdo.snomed.util.rf2.Relationship.CHARACTERISTIC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,10 @@ public class RelationshipProcessor {
 	private final String statedFile;
 	private final String inferredFile;
 	private final String outputFile;
+
+	private int a1Count = 0;
+	private int a2Count = 0;
+	private int a3Count = 0;
 
 	public RelationshipProcessor(String statedFile, String inferredFile, String outputFile) {
 		this.statedFile = statedFile;
@@ -63,25 +69,73 @@ public class RelationshipProcessor {
 		reportProgress(statedRelationships);
 	}
 
-	private void findReplacements(Map<String, Relationship> statedRelationships, Map<String, Relationship> inferredRelationships) {
+	private void findReplacements(Map<String, Relationship> statedRelationships, Map<String, Relationship> inferredRelationships)
+			throws UnsupportedEncodingException {
 
 		for (Relationship thisStatedRelationship : statedRelationships.values()) {
 			// Does this relationship exist in the inferred file? If not, find it a replacement
 			if (!inferredRelationships.containsKey(thisStatedRelationship.getUuid())) {
 				thisStatedRelationship.setNeedsReplaced(true);
-				// Can we find an inferred relationship in the same group with the same type where the destination
-				// is a child of the stated relationship's destination?
-				Concept sourceInferred = Concept.getConcept(thisStatedRelationship.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
-				List<Relationship> replacements = sourceInferred.findMatchingRelationships(thisStatedRelationship.getTypeId(),
-						thisStatedRelationship.getGroup(), thisStatedRelationship.getDestinationConcept());
-				if (replacements.size() > 0) {
-					// Shouldn't matter which matching relationship we replace with.
-					thisStatedRelationship.setReplacement(replacements.get(0));
+				boolean successfulReplacement = false;
+				//Try Algorithm 1
+				successfulReplacement = matchGroupPlusChildDestination(thisStatedRelationship);
+				
+				//Try Algorithm 2
+				if (!successfulReplacement) {
+					successfulReplacement = matchTriplesAcrossGroups(thisStatedRelationship);
+				}
+				
+				//Try Algorithm 3
+				if (!successfulReplacement) {
+					//successfulReplacement = matchTriplesAcrossGroups(thisStatedRelationship);
 				}
 			}
 		}
 
 	}
+	
+	/*
+	 * Algorithm 1 - find an inferred relationship with the same source, type and group but a 
+	 * more proximate destination
+	 */
+	private boolean matchGroupPlusChildDestination(Relationship sRelationship) {
+		boolean success = false;
+		// Can we find an inferred relationship in the same group with the same type where the destination
+		// is a child of the stated relationship's destination?
+		Concept sourceInferred = Concept.getConcept(sRelationship.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
+		List<Relationship> replacements = sourceInferred.findMatchingRelationships(sRelationship.getTypeId(),
+				sRelationship.getGroup(), sRelationship.getDestinationConcept());
+		if (replacements.size() > 0) {
+			// Shouldn't matter which matching relationship we replace with.
+			sRelationship.setReplacement(replacements.get(0));
+			success = true;
+			a1Count++;
+		}
+		return success;
+	}
+	
+	/*
+	 * Algorithm 2 - find an inferred relationship where all members of the stated group exist as the same triples
+	 * in the inferred group
+	 */
+	private boolean matchTriplesAcrossGroups(Relationship sRelationship) throws UnsupportedEncodingException {
+		boolean success = false;
+		//What is the triples hash of the stated group?
+		String triplesHash = sRelationship.getSourceConcept().getTriplesHash(sRelationship.getGroup());
+		
+		//Are there any inferred groups for the same source concept that feature the same triples hash?
+		//Use the concept in the inferred graph
+		Concept sourceConceptInf = Concept.getConcept(sRelationship.getSourceId(), CHARACTERISTIC.INFERRED);
+		List<Relationship> replacements = sourceConceptInf.findMatchingRelationships(triplesHash, sRelationship);
+		if (replacements != null && replacements.size() > 0) {
+			// Shouldn't matter which matching relationship we replace with.
+			sRelationship.setReplacement(replacements.get(0));
+			success = true;
+			a2Count++;
+		}
+		return success;
+	}
+	
 
 	private void reportProgress(Map<String, Relationship> statedRelationships) {
 		long needsReplaced = 0;
@@ -101,6 +155,7 @@ public class RelationshipProcessor {
 		long remainder = needsReplaced - hasBeenReplaced;
 		LOGGER.info("Of the {} stated relationships, {} needed replaced, {} have been replaced, leaving {} to work with",
 				statedRelationships.size(), needsReplaced, hasBeenReplaced, remainder);
+		LOGGER.info("Algorithm success rates 1: {}, 2: {} 3: {}", a1Count, a2Count, a3Count);
 
 	}
 

@@ -1,5 +1,6 @@
 package org.ihtsdo.snomed.util.rf2;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.ihtsdo.snomed.util.Type5UuidFactory;
 import org.ihtsdo.snomed.util.rf2.Relationship.CHARACTERISTIC;
 import org.ihtsdo.snomed.util.rf2.schema.SchemaFactory;
 import org.slf4j.Logger;
@@ -18,6 +20,18 @@ public class Concept implements Comparable<Concept> {
 	private Long id;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Concept.class);
+
+	private static Type5UuidFactory type5UuidFactory;
+
+	private int maxGroupId = 0; // How many groups are defined for this source concept?
+
+	static {
+		try {
+			type5UuidFactory = new Type5UuidFactory();
+		} catch (Exception e) {
+			throw new RuntimeException("Unable to initialise UUID factory", e);
+		}
+	}
 
 	Set<Concept> parents = new TreeSet<Concept>();
 	Set<Relationship> attributes = new HashSet<Relationship>();
@@ -61,7 +75,14 @@ public class Concept implements Comparable<Concept> {
 		}
 
 		// But all relationships get recorded as attributes
-		sourceConcept.attributes.add(relationship);
+		sourceConcept.addAttribute(relationship);
+	}
+
+	private void addAttribute(Relationship relationship) {
+		attributes.add(relationship);
+		if (relationship.getGroup() > this.maxGroupId) {
+			this.maxGroupId = relationship.getGroup();
+		}
 	}
 
 	/**
@@ -101,10 +122,10 @@ public class Concept implements Comparable<Concept> {
 		return false;
 	}
 
-	public static Concept getConcept(Long destinationId, CHARACTERISTIC characteristic) {
+	public static Concept getConcept(Long conceptId, CHARACTERISTIC characteristic) {
 		Map<Long, Concept> allConcepts = characteristic.equals(Relationship.CHARACTERISTIC.STATED) ? allStatedConcepts
 				: allInferredConcepts;
-		return allConcepts.get(destinationId);
+		return allConcepts.get(conceptId);
 	}
 
 	public List<Relationship> findMatchingRelationships(Long typeId, int group, Concept statedDestinationConcept) {
@@ -144,6 +165,58 @@ public class Concept implements Comparable<Concept> {
 			}
 		}
 		return matches;
+	}
+
+	public List<Relationship> findMatchingRelationships(Long typeId, Long destinationId, int group) {
+		// find relationships of this concept with the same type and group
+		List<Relationship> matches = new ArrayList<Relationship>();
+		for (Relationship thisRelationship : attributes) {
+			if (thisRelationship.matchesTypeAndGroup(typeId, group) && thisRelationship.getDestinationId().equals(destinationId)) {
+				matches.add(thisRelationship);
+			}
+		}
+		return matches;
+	}
+
+	public List<Relationship> findMatchingRelationships(int group) {
+		// find relationships of this concept with the group
+		List<Relationship> matches = new ArrayList<Relationship>();
+		for (Relationship thisRelationship : attributes) {
+			if (thisRelationship.matchesGroup(group)) {
+				matches.add(thisRelationship);
+			}
+		}
+		return matches;
+	}
+
+	/**
+	 * @return a predictable UUID such that a given set of triples (source + destination + type) can be uniquely identified as a group,
+	 *         regardless of the group id assigned.
+	 * @throws UnsupportedEncodingException
+	 */
+	public String getTriplesHash(int group) throws UnsupportedEncodingException {
+		String stringToHash = "";
+		for (Relationship thisRelationship : attributes) {
+			if (thisRelationship.matchesGroup(group)) {
+				stringToHash += thisRelationship.getTripleString();
+			}
+		}
+		return type5UuidFactory.get(stringToHash).toString();
+	}
+
+	/*
+	 * Finds a relationship that matches on triple where the triple belongs to a group that matches on triples Hash
+	 */
+	public List<Relationship> findMatchingRelationships(String triplesHash, Relationship sRelationship) throws UnsupportedEncodingException {
+		// Can we find a group where every triple matches - triples Hash?
+		for (int groupId = 1; groupId <= this.maxGroupId; groupId++) {
+			if (triplesHash.equals(getTriplesHash(groupId))) {
+				// Now find a relationship within that matching group which has this triple. Source is taken
+				// for granted since we're working from the concept
+				return findMatchingRelationships(sRelationship.getTypeId(), sRelationship.getDestinationId(), groupId);
+			}
+		}
+		return null;
 	}
 
 }

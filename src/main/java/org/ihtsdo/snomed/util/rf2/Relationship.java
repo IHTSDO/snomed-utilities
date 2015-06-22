@@ -54,10 +54,14 @@ public class Relationship {
 		typeId = new Long(getField(IDX_TYPEID));
 		group = Integer.parseInt(getField(IDX_RELATIONSHIPGROUP));
 		uuid = type5UuidFactory.get(
-				lineValues[IDX_SOURCEID] + lineValues[IDX_DESTINATIONID] + lineValues[IDX_TYPEID] + lineValues[IDX_RELATIONSHIPGROUP])
+				getTripleString() + lineValues[IDX_RELATIONSHIPGROUP])
 				.toString();
 		// If this relationship is an "IS A" then add that to the concept
 		Concept.addRelationship(this, characteristic);
+	}
+
+	public String getTripleString() {
+		return lineValues[IDX_SOURCEID] + lineValues[IDX_DESTINATIONID] + lineValues[IDX_TYPEID];
 	}
 
 	boolean isISA() {
@@ -113,7 +117,7 @@ public class Relationship {
 	}
 
 	public boolean matchesTypeAndGroup(Long typeId, int group) {
-		return (this.group == group) && this.typeId.equals(typeId);
+		return matchesGroup(group) && this.typeId.equals(typeId);
 	}
 
 	public void setReplacement(Relationship replacementRelationship) {
@@ -127,6 +131,10 @@ public class Relationship {
 
 	public Long getDestinationId() {
 		return new Long(lineValues[IDX_DESTINATIONID]);
+	}
+
+	public boolean matchesGroup(int group) {
+		return (this.group == group);
 	}
 
 }
