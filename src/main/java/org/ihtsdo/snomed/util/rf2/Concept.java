@@ -34,7 +34,7 @@ public class Concept implements Comparable<Concept> {
 	}
 
 	Set<Concept> parents = new TreeSet<Concept>();
-	Set<Relationship> attributes = new HashSet<Relationship>();
+	TreeSet<Relationship> attributes = new TreeSet<Relationship>();
 
 	public Concept(Long id) {
 		this.id = id;
@@ -145,7 +145,45 @@ public class Concept implements Comparable<Concept> {
 		return secondPassMatches;
 	}
 
-	private boolean hasParent(Concept targetConcept) {
+	public List<Relationship> findMatchingRelationships(Long typeId, Concept statedDestinationConcept) {
+		// find relationships of this concept with the same type and group, and where the destination has the
+		// statedDestinationConcept as a parent.
+
+		// lets match on type first since it's cheap
+		List<Relationship> firstPassMatches = findMatchingRelationships(typeId);
+
+		// Now we'll try for an exact match with the destination concept, and if not found,
+		// run again looking for more proximate children
+		List<Relationship> secondPassMatches = new ArrayList<Relationship>();
+		for (Relationship thisRelationship : firstPassMatches) {
+			if (thisRelationship.getDestinationConcept().equals(statedDestinationConcept)) {
+				secondPassMatches.add(thisRelationship);
+			}
+		}
+
+		if (secondPassMatches.size() == 0) {
+			for (Relationship thisRelationship : firstPassMatches) {
+				if (thisRelationship.getDestinationConcept().hasParent(statedDestinationConcept)) {
+					secondPassMatches.add(thisRelationship);
+				}
+			}
+		}
+
+		return secondPassMatches;
+	}
+
+	private List<Relationship> findMatchingRelationships(Long typeId) {
+		// find relationships of this concept with the same type
+		List<Relationship> matches = new ArrayList<Relationship>();
+		for (Relationship thisRelationship : attributes) {
+			if (thisRelationship.isType(typeId)) {
+				matches.add(thisRelationship);
+			}
+		}
+		return matches;
+	}
+
+	public boolean hasParent(Concept targetConcept) {
 		// Recurse through my parents to find if one of them is the targetConcept
 		// Will stop at the root concept, returning false, as it has no parents
 		for (Concept thisParent : parents) {
@@ -178,12 +216,15 @@ public class Concept implements Comparable<Concept> {
 		return matches;
 	}
 
-	public List<Relationship> findMatchingRelationships(int group) {
+	public List<Relationship> findMatchingRelationships(int group, boolean filterIsAs) {
 		// find relationships of this concept with the group
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship thisRelationship : attributes) {
 			if (thisRelationship.matchesGroup(group)) {
-				matches.add(thisRelationship);
+				// Are we filtering out Is A relationships?
+				if (!filterIsAs || (filterIsAs && !thisRelationship.isType(Relationship.ISA_ID))) {
+					matches.add(thisRelationship);
+				}
 			}
 		}
 		return matches;
@@ -217,6 +258,41 @@ public class Concept implements Comparable<Concept> {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * @return a list of relationships in groups where the group contains at least ALL the given relationship types
+	 */
+	public List<Relationship> findMatchingRelationships(List<Long> groupTypes) {
+		List<Relationship> allGroupRelationships = new ArrayList<Relationship>();
+		// Work through all the groups
+		for (int groupId = 1; groupId <= this.maxGroupId; groupId++) {
+			boolean allMatch = true;
+			List<Relationship> thisGroupRelationships = findMatchingRelationships(groupId, false);
+			// Work through all the types and make sure each one is represented
+			second_loop:
+			for (Long thisType : groupTypes) {
+				for (Relationship thisRelationship : thisGroupRelationships) {
+					if (thisRelationship.isType(thisType)) {
+						continue second_loop; // Move on to next type
+					}
+				}
+				// If we've not broken out of the loop by here, then we've failed to find a match for this Type
+				allMatch = false;
+				// No need to carry on through other types if we can't match this one
+				break;
+			}
+
+			// If all types are represented, then add these relationships to our list of potential matches
+			if (allMatch) {
+				allGroupRelationships.addAll(thisGroupRelationships);
+			}
+		}
+		return allGroupRelationships;
+	}
+
+	public TreeSet<Relationship> getAttributes() {
+		return attributes;
 	}
 
 }

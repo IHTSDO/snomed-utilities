@@ -2,12 +2,16 @@ package org.ihtsdo.snomed.util.rf2;
 
 import org.ihtsdo.snomed.util.Type5UuidFactory;
 
-public class Relationship {
+public class Relationship implements Comparable<Relationship> {
 
 	// id effectiveTime active moduleId sourceId destinationId relationshipGroup typeId characteristicTypeId modifierId
 	public static final long ISA_ID = 116680003;
+	public static final String CHARACTERISTIC_STATED_SCTID = "900000000000010007";
 	public static final String FIELD_DELIMITER = "\t";
+	public static final String LINE_DELIMITER = "\r\n";
 	public static final String ACTIVE_FLAG = "1";
+	public static final String INACTIVE_FLAG = "0";
+	public static final String HEADER_ROW = "id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId\r\n";
 
 	public static enum CHARACTERISTIC {
 		STATED, INFERRED
@@ -27,12 +31,12 @@ public class Relationship {
 	Concept sourceConcept;
 	Concept destinationConcept;
 
-	Long typeId;
-	String uuid;
-	int group;
-	Relationship replacement = null;
+	private Long typeId;
+	private String uuid;
+	private int group;
+	private Relationship replacement = null;
 
-	boolean needsReplaced = false;
+	private boolean needsReplaced = false;
 
 	public static final int IDX_ID = 0;
 	public static final int IDX_EFFECTIVETIME = 1;
@@ -44,6 +48,8 @@ public class Relationship {
 	public static final int IDX_TYPEID = 7;
 	public static final int IDX_CHARACTERISTICTYPEID = 8;
 	public static final int IDX_MODIFIERID = 9;
+	public static final int MAX_COLUMN = 9;
+
 
 	private String[] lineValues;
 
@@ -135,6 +141,60 @@ public class Relationship {
 
 	public boolean matchesGroup(int group) {
 		return (this.group == group);
+	}
+
+	public boolean isType(Long thisType) {
+		return this.typeId.equals(thisType);
+	}
+
+	public String toString() {
+		return "[S: " + lineValues[IDX_SOURCEID] + ", D: " + lineValues[IDX_DESTINATIONID] + ", T: " + lineValues[IDX_TYPEID] + ", G: "
+				+ lineValues[IDX_RELATIONSHIPGROUP] + "] ";
+	}
+
+	public String getRF2(String effectiveTime, String activeFlag, String chacteristicTypeId) {
+		StringBuffer sb = new StringBuffer();
+		// Output all columns, replacing effectiveTime, active and chacteristicTypeId to passed in values
+		for (int columnIdx = 0; columnIdx <= MAX_COLUMN; columnIdx++) {
+			if (columnIdx == IDX_EFFECTIVETIME) {
+				sb.append(effectiveTime);
+			} else if (columnIdx == IDX_ACTIVE) {
+				sb.append(activeFlag);
+			} else if (columnIdx == IDX_CHARACTERISTICTYPEID) {
+				sb.append(chacteristicTypeId);
+			} else {
+				sb.append(lineValues[columnIdx]);
+			}
+
+			if (columnIdx < MAX_COLUMN) {
+				sb.append(FIELD_DELIMITER);
+			}
+		}
+
+		sb.append(LINE_DELIMITER);
+		return sb.toString();
+	}
+
+	public Relationship getReplacement() {
+		return replacement;
+	}
+
+	@Override
+	public int compareTo(Relationship other) {
+		// Sort on source sctid, group, type, destination
+		int i = this.getSourceId().compareTo(other.getSourceId());
+		if (i != 0)
+			return i;
+
+		i = this.getGroup() - other.getGroup();
+		if (i != 0)
+			return i;
+
+		i = this.getTypeId().compareTo(other.getTypeId());
+		if (i != 0)
+			return i;
+
+		return this.getDestinationId().compareTo(other.getDestinationId());
 	}
 
 }

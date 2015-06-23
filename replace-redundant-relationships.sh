@@ -35,6 +35,7 @@ then
   exit -1
 fi
 set -x;
-java -Xms4g -Xmx5g -classpath ${executable}  org.ihtsdo.snomed.util.rf2.RelationshipProcessor ${sourceDir}/sct2_StatedRelationship_Snapshot_INT_${effectiveTime}.txt ${sourceDir}/sct2_Relationship_Snapshot_INT_${effectiveTime}.txt target/sct2_StatedRelationship_Snapshot_INT_{effectiveTime}.txt
+today=`date +%Y%m%d`
+java -Xms4g -Xmx5g -classpath ${executable}  org.ihtsdo.snomed.util.rf2.RelationshipProcessor ${sourceDir}/sct2_StatedRelationship_Snapshot_INT_${effectiveTime}.txt ${sourceDir}/sct2_Relationship_Snapshot_INT_${effectiveTime}.txt target/sct2_StatedRelationship_Delta_INT_${today}.txt
 
 
