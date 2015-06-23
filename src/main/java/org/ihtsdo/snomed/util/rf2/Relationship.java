@@ -5,7 +5,7 @@ import org.ihtsdo.snomed.util.Type5UuidFactory;
 public class Relationship implements Comparable<Relationship> {
 
 	// id effectiveTime active moduleId sourceId destinationId relationshipGroup typeId characteristicTypeId modifierId
-	public static final long ISA_ID = 116680003;
+	public static final Long ISA_ID = new Long(116680003);
 	public static final String CHARACTERISTIC_STATED_SCTID = "900000000000010007";
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";
@@ -71,7 +71,7 @@ public class Relationship implements Comparable<Relationship> {
 	}
 
 	boolean isISA() {
-		return typeId == ISA_ID;
+		return typeId.equals(ISA_ID);
 	}
 
 	String getField(int fieldIdx) {

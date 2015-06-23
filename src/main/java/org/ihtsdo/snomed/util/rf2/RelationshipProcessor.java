@@ -292,9 +292,34 @@ public class RelationshipProcessor {
 	 * Algorithm 5 - find an inferred relationship where the relationship type is a child of the stated type and if that fails, try also
 	 * matching on the destination being a child of the stated destination
 	 */
-	private boolean matchMoreProximateType(Relationship thisStatedRelationship) {
-		// TODO Auto-generated method stub
-		return false;
+	private boolean matchMoreProximateType(Relationship sRelationship) {
+		boolean success = false;
+		Concept sourceInferred = Concept.getConcept(sRelationship.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
+		Concept relationshipType = Concept.getConcept(sRelationship.getTypeId(), Relationship.CHARACTERISTIC.INFERRED);
+		List<Relationship> replacements = sourceInferred.findMatchingRelationships(relationshipType);
+
+		// Now first try and find in that list a relationship where we have the same destination
+		for (Relationship thisPotentialReplacement : replacements) {
+			if (thisPotentialReplacement.getDestinationConcept().equals(sRelationship.getDestinationConcept())) {
+				sRelationship.setReplacement(thisPotentialReplacement);
+				a5Count++;
+				success = true;
+				break;
+			}
+		}
+		// And if not, try to find one with a child destination of the stated destination
+		if (!success) {
+			for (Relationship thisPotentialReplacement : replacements) {
+				if (thisPotentialReplacement.getDestinationConcept().hasParent(sRelationship.getDestinationConcept())) {
+					sRelationship.setReplacement(thisPotentialReplacement);
+					a5Count++;
+					success = true;
+					break;
+				}
+			}
+		}
+
+		return success;
 	}
 
 
@@ -316,7 +341,7 @@ public class RelationshipProcessor {
 		long remainder = needsReplaced - hasBeenReplaced;
 		LOGGER.info("Of the {} stated relationships, {} needed replaced, {} have been replaced, leaving {} to work with",
 				statedRelationships.size(), needsReplaced, hasBeenReplaced, remainder);
-		LOGGER.info("Algorithm success rates 1: {}, 2: {}, 3: {}, 4: {}", a1Count, a2Count, a3Count, a4Count);
+		LOGGER.info("Algorithm success rates 1: {}, 2: {}, 3: {}, 4: {}, 5: {}", a1Count, a2Count, a3Count, a4Count, a5Count);
 		LOGGER.info("Algorithm 3 breakdown - potential Exact Match: {}, More Proximate: {}", a3_1Count, a3_2Count);
 
 	}
@@ -383,16 +408,20 @@ public class RelationshipProcessor {
 		LOGGER.info("First 10 failures: ");
 		int relationshipsReported = 0;
 
+		Relationship lastRelationship = null;
 		for (Relationship thisRelationship : statedRelationships.values()) {
 			if (thisRelationship.isNeedsReplaced() && !thisRelationship.hasReplacement()) {
 				LOGGER.info(thisRelationship.toString());
 				relationshipsReported++;
+				lastRelationship = thisRelationship;
+				if (relationshipsReported >= 10) {
+					break;
+				}
 			}
-			if (relationshipsReported >= 10) {
-				// Output the full definition for the last concept mentioned
-				outputRelationships(thisRelationship.getSourceId());
-				break;
-			}
+		}
+		// Output the full definition for the last concept mentioned
+		if (lastRelationship != null) {
+			outputRelationships(lastRelationship.getSourceId());
 		}
 
 	}

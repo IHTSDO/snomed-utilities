@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class Concept implements Comparable<Concept> {
 
-	private Long id;
+	private Long sctId;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Concept.class);
 
@@ -37,7 +37,7 @@ public class Concept implements Comparable<Concept> {
 	TreeSet<Relationship> attributes = new TreeSet<Relationship>();
 
 	public Concept(Long id) {
-		this.id = id;
+		this.sctId = id;
 	}
 
 	private static Map<Long, Concept> allStatedConcepts = new HashMap<Long, Concept>();
@@ -103,21 +103,21 @@ public class Concept implements Comparable<Concept> {
 
 		LOGGER.debug("The following concepts have no parent in graph {}: ", characteristic.toString());
 		for (Concept thisConcept : noParents) {
-			LOGGER.debug(thisConcept.id.toString());
+			LOGGER.debug(thisConcept.toString());
 		}
 
 	}
 
 	@Override
 	public int compareTo(Concept other) {
-		return this.id.compareTo(other.id);
+		return this.sctId.compareTo(other.sctId);
 	}
 
 	@Override
 	public boolean equals(Object other) {
 		if (other instanceof Concept) {
 			Concept otherConcept = (Concept) other;
-			return this.id.equals(otherConcept.id);
+			return this.sctId.equals(otherConcept.sctId);
 		}
 		return false;
 	}
@@ -293,6 +293,37 @@ public class Concept implements Comparable<Concept> {
 
 	public TreeSet<Relationship> getAttributes() {
 		return attributes;
+	}
+
+	/**
+	 * @return a list of relationships for this concept where the type is the same or a child of the target relationship type
+	 */
+	public List<Relationship> findMatchingRelationships(Concept relType) {
+		List<Relationship> matches = new ArrayList<Relationship>();
+		for (Relationship thisRel : this.attributes) {
+			if (thisRel.isType(relType.getSctId())) {
+				matches.add(thisRel);
+			} else {
+				// Don't do this for "Is A" since we know we don't have any more specific cases of that attribute
+				if (!thisRel.isISA()) {
+					// Find the concept for this potential match relationship in the inferred graph
+					Concept potentialMatchingType = Concept.getConcept(thisRel.getTypeId(), CHARACTERISTIC.INFERRED);
+					// does this potential relationship's type have the target type as a parent?
+					if (potentialMatchingType.hasParent(relType)) {
+						matches.add(thisRel);
+					}
+				}
+			}
+		}
+		return matches;
+	}
+
+	public Long getSctId() {
+		return sctId;
+	}
+
+	public String toString() {
+		return getSctId().toString();
 	}
 
 }
