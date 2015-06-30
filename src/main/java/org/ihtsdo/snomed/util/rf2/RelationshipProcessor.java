@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,23 +64,29 @@ public class RelationshipProcessor {
 	}
 
 	public static void main(String[] args) throws Exception {
-		if (args.length != 3) {
+		if (args.length < 3) {
 			doHelp();
 		}
 
+		RelationshipProcessor rp;
 		// Is the 3rd parameter a number? Output the relationships for that SCTID if so
 		try {
 			Long conceptSCTID = new Long(args[2]);
-			RelationshipProcessor rp = new RelationshipProcessor(args[0], args[1]);
+			rp = new RelationshipProcessor(args[0], args[1]);
 			rp.loadRelationships();
 			rp.outputRelationships(conceptSCTID);
 
 		} catch (NumberFormatException e) {
-			RelationshipProcessor rp = new RelationshipProcessor(args[0], args[1], args[2]);
+			rp = new RelationshipProcessor(args[0], args[1], args[2]);
 			// Make sure we have a valid effectiveTime for output, before we start
 			rp.outputEffectiveTime = extractEffectiveTime(args[2]);
 			rp.loadRelationships();
 			rp.substituteInferredRelationships();
+		}
+
+		// Are we running in interactive mode? Query memory structures if so
+		if (args.length == 4 && args[3].equals("-i")) {
+			rp.goInteractive();
 		}
 	}
 
@@ -91,17 +98,32 @@ public class RelationshipProcessor {
 	private void outputRelationships(Long conceptSCTID) {
 		// First find the concept in the Stated View
 		Concept conceptStated = Concept.getConcept(conceptSCTID, CHARACTERISTIC.STATED);
+
+		if (conceptStated == null) {
+			LOGGER.info("Concept {} not found.", conceptSCTID);
+			return;
+		}
+
 		TreeSet<Relationship> statedRels = conceptStated.getAttributes();
+
+		// Keep a track of replacements selected for the stated view, and indicate those in the
+		// inferred view
+		List<Relationship> replacements = new ArrayList<Relationship>();
+
 		LOGGER.info(conceptSCTID.toString() + " stated view: ");
+		boolean addStar = false;
 		for (Relationship thisRelationship : statedRels) {
-			LOGGER.info(thisRelationship.toString());
+			addStar = thisRelationship.needsReplaced();
+			LOGGER.info(thisRelationship.toString(addStar));
+
 		}
 
 		Concept conceptInferred = Concept.getConcept(conceptSCTID, CHARACTERISTIC.INFERRED);
 		TreeSet<Relationship> inferredRels = conceptInferred.getAttributes();
 		LOGGER.info(conceptSCTID.toString() + " inferred view: ");
 		for (Relationship thisRelationship : inferredRels) {
-			LOGGER.info(thisRelationship.toString());
+			addStar = thisRelationship.isReplacement();
+			LOGGER.info(thisRelationship.toString(addStar));
 		}
 	}
 
@@ -141,10 +163,19 @@ public class RelationshipProcessor {
 	private void findReplacements()
 			throws UnsupportedEncodingException {
 
+		// First pass, mark all stated relationships that might need replaced. Do this now so we can
+		// allow potential duplicates to temporarily exist if the prior existing duplicate is also going to be changed.
 		for (Relationship thisStatedRelationship : statedRelationships.values()) {
 			// Does this relationship exist in the inferred file? If not, find it a replacement
 			if (!inferredRelationships.containsKey(thisStatedRelationship.getUuid())) {
-				thisStatedRelationship.setNeedsReplaced(true);
+				thisStatedRelationship.needsReplaced(true);
+			}
+		}
+
+		// Second pass
+		for (Relationship thisStatedRelationship : statedRelationships.values()) {
+			// If it's already been replaced (because it already moved as part of a group) then skip
+			if (thisStatedRelationship.needsReplaced() && !thisStatedRelationship.hasReplacement()) {
 				boolean successfulReplacement = false;
 				//Try Algorithm 1
 				successfulReplacement = matchGroupPlusChildDestination(thisStatedRelationship);
@@ -183,13 +214,10 @@ public class RelationshipProcessor {
 		// is a child of the stated relationship's destination?
 		Concept sourceInferred = Concept.getConcept(sRelationship.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
 		List<Relationship> replacements = sourceInferred.findMatchingRelationships(sRelationship.getTypeId(),
-				sRelationship.getGroup(), sRelationship.getDestinationConcept());
-		if (replacements.size() > 0) {
-			// Shouldn't matter which matching relationship we replace with.
-			sRelationship.setReplacement(replacements.get(0));
-			success = true;
+				sRelationship.getDestinationId(), sRelationship.getGroup(), true, false);
+		success = attemptReplacement(sRelationship, replacements, "Alg1");
+		if (success)
 			a1Count++;
-		}
 		return success;
 	}
 	
@@ -206,18 +234,15 @@ public class RelationshipProcessor {
 		//Use the concept in the inferred graph
 		Concept sourceConceptInf = Concept.getConcept(sRelationship.getSourceId(), CHARACTERISTIC.INFERRED);
 		List<Relationship> replacements = sourceConceptInf.findMatchingRelationships(triplesHash, sRelationship);
-		if (replacements != null && replacements.size() > 0) {
-			// Shouldn't matter which matching relationship we replace with.
-			sRelationship.setReplacement(replacements.get(0));
-			success = true;
+		success = attemptReplacement(sRelationship, replacements, "Alg2");
+		if (success)
 			a2Count++;
-		}
 		return success;
 	}
 	
 	/*
-	 * Algorithm 3 - find an inferred relationship in a similar group where the destination is a more proximate child of the stated
-	 * destination
+	 * Algorithm 3 - find an inferred relationship in a similar group where the destination is the same or a more proximate child of the
+	 * stated destination
 	 */
 	private boolean matchChildDestinationInOtherGroups(Relationship sRelationship) throws UnsupportedEncodingException {
 		boolean success = false;
@@ -251,21 +276,14 @@ public class RelationshipProcessor {
 		if (replacements.size() == 0) {
 			for (Relationship potentialReplacement : potentialGroups) {
 				if (potentialReplacement.isType(sRelationship.getTypeId()) && 
-						potentialReplacement.getDestinationConcept().hasParent(sRelationship.getSourceConcept()))
+ potentialReplacement.getDestinationConcept().hasParent(sRelationship.getDestinationConcept()))
 						replacements.add(potentialReplacement);
 				a3_2Count++;
 			}			
 		}
-		
-		if (replacements.size() > 0) {
-			// Shouldn't matter which matching relationship we replace with.
-			sRelationship.setReplacement(replacements.get(0));
-			success = true;
+		success = attemptReplacement(sRelationship, replacements, "Alg3");
+		if (success)
 			a3Count++;
-			if (replacements.size() > 1) {
-				LOGGER.warn("Found multiple potential replacements for {}", sRelationship.toString());
-			}
-		}
 		return success;
 	}
 
@@ -279,12 +297,10 @@ public class RelationshipProcessor {
 
 		Concept sourceInferred = Concept.getConcept(sRelationship.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
 		List<Relationship> replacements = sourceInferred.findMatchingRelationships(sRelationship.getTypeId(), sRelationship.getDestinationConcept());
-		if (replacements.size() > 0) {
-			// Shouldn't matter which matching relationship we replace with.
-			sRelationship.setReplacement(replacements.get(0));
-			success = true;
+		success = attemptReplacement(sRelationship, replacements, "Alg4");
+		if (success)
 			a4Count++;
-		}
+
 		return success;
 	}
 
@@ -297,11 +313,12 @@ public class RelationshipProcessor {
 		Concept sourceInferred = Concept.getConcept(sRelationship.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
 		Concept relationshipType = Concept.getConcept(sRelationship.getTypeId(), Relationship.CHARACTERISTIC.INFERRED);
 		List<Relationship> replacements = sourceInferred.findMatchingRelationships(relationshipType);
+		LOGGER.warn("Found multiple potential replacements for {} ({})", sRelationship.toString(), "Alg5");
 
 		// Now first try and find in that list a relationship where we have the same destination
 		for (Relationship thisPotentialReplacement : replacements) {
 			if (thisPotentialReplacement.getDestinationConcept().equals(sRelationship.getDestinationConcept())) {
-				sRelationship.setReplacement(thisPotentialReplacement);
+				sRelationship.setReplacement(thisPotentialReplacement, "Alg5.1");
 				a5Count++;
 				success = true;
 				break;
@@ -311,7 +328,7 @@ public class RelationshipProcessor {
 		if (!success) {
 			for (Relationship thisPotentialReplacement : replacements) {
 				if (thisPotentialReplacement.getDestinationConcept().hasParent(sRelationship.getDestinationConcept())) {
-					sRelationship.setReplacement(thisPotentialReplacement);
+					sRelationship.setReplacement(thisPotentialReplacement, "Alg5.2");
 					a5Count++;
 					success = true;
 					break;
@@ -322,6 +339,55 @@ public class RelationshipProcessor {
 		return success;
 	}
 
+	private boolean attemptReplacement(Relationship sRel, List<Relationship> replacements, String algorithmUsed) {
+		boolean replacementMade = false;
+
+		int attempt = 0;
+		for (; replacements != null && !replacementMade && attempt < replacements.size(); attempt++) {
+			Relationship potentialReplacement = replacements.get(attempt);
+			if (sRel.isSafelyReplacedBy(potentialReplacement)) {
+				sRel.setReplacement(potentialReplacement, algorithmUsed);
+				replacementMade = true;
+				// If we've moved group, then any group siblings should move to the same group if AT ALL POSSIBLE ie match on
+				// more proximate destination and type
+				if (sRel.getGroup() != potentialReplacement.getGroup()) {
+					moveGroupSiblings(sRel, potentialReplacement.getGroup());
+				}
+			} else {
+				LOGGER.warn("Avoided potentially safe replacement - {} in {}", potentialReplacement, algorithmUsed);
+			}
+		}
+
+		if (replacementMade) {
+			if (replacements.size() > attempt) {
+				LOGGER.warn("Found multiple potential replacements for {} in {}", sRel.toString(), algorithmUsed);
+			}
+		}
+		return replacementMade;
+	}
+
+	/**
+	 * When one relationship in a stated group moves group, try to move all it's siblings together EVEN IF that relationship has already
+	 * been replaced - keeping siblings together in a group is paramount, and trumps other apparently better matches eg exact triple matches
+	 * in other groups.
+	 */
+	private void moveGroupSiblings(Relationship sRel, int targetGroup) {
+		//Find all the group siblings of this stated relationship
+		List<Relationship> statedSiblings = sRel.getSourceConcept().findMatchingRelationships(sRel.getGroup(), true);
+		
+		//For each one that's not the current relationship, try and find an inferred match (on Type + Destination, Type + more proximate destination,
+		//more proximate type + destination, both more proximate) in that same target group
+		Concept inferredSource = Concept.getConcept(sRel.getSourceId(), CHARACTERISTIC.INFERRED);
+		for (Relationship statedSibling : statedSiblings) {
+			if (!statedSibling.equals(sRel)) {
+				List<Relationship> potentialMatches = inferredSource.findMatchingRelationships(statedSibling.getTypeId(),
+						statedSibling.getDestinationId(), targetGroup, true, true);
+				if (potentialMatches.size() > 0) {
+					statedSibling.setReplacement(potentialMatches.get(0), "AlgMGS");
+				}
+			}
+		}
+	}
 
 	private void reportProgress() {
 		long needsReplaced = 0;
@@ -329,7 +395,7 @@ public class RelationshipProcessor {
 
 		for (Relationship thisStatedRelationship : statedRelationships.values()) {
 
-			if (thisStatedRelationship.isNeedsReplaced()) {
+			if (thisStatedRelationship.needsReplaced()) {
 				needsReplaced++;
 			}
 
@@ -384,9 +450,13 @@ public class RelationshipProcessor {
 			// and output the replacements all with effective time which matches the output file
 			writer.write(Relationship.HEADER_ROW);
 			for (Relationship thisRelationship : statedRelationships.values()) {
-				if (thisRelationship.hasReplacement()) {
+				// If a stated relationship doesn't exist in the inferred file, then we need to remove it in any event.
+				if (thisRelationship.needsReplaced()) {
 					writer.write(thisRelationship.getRF2(outputEffectiveTime, Relationship.INACTIVE_FLAG,
 							Relationship.CHARACTERISTIC_STATED_SCTID));
+				}
+				// if it has a replacement, we can write that
+				if (thisRelationship.hasReplacement()) {
 					writer.write(thisRelationship.getReplacement().getRF2(outputEffectiveTime, Relationship.ACTIVE_FLAG,
 							Relationship.CHARACTERISTIC_STATED_SCTID));
 				}
@@ -410,7 +480,7 @@ public class RelationshipProcessor {
 
 		Relationship lastRelationship = null;
 		for (Relationship thisRelationship : statedRelationships.values()) {
-			if (thisRelationship.isNeedsReplaced() && !thisRelationship.hasReplacement()) {
+			if (thisRelationship.needsReplaced() && !thisRelationship.hasReplacement()) {
 				LOGGER.info(thisRelationship.toString());
 				relationshipsReported++;
 				lastRelationship = thisRelationship;
@@ -426,10 +496,22 @@ public class RelationshipProcessor {
 
 	}
 
+	private void goInteractive() {
+		String sctid = "";
+		try (Scanner in = new Scanner(System.in)) {
+			while (!sctid.equals("quit")) {
+				System.out.println("Enter source concept sctid: ");
+				sctid = in.nextLine().trim();
+				if (!sctid.equals("quit")) {
+					outputRelationships(new Long(sctid));
+				}
+			}
+		}
+	}
+
 	private static void doHelp() {
 		LOGGER.info("Usage: <stated relationship file location>  <inferred realtionship file location> <output file location>");
 		System.exit(-1);
-
 	}
 
 }

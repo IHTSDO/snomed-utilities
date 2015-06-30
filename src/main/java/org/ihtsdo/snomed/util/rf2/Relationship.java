@@ -1,5 +1,7 @@
 package org.ihtsdo.snomed.util.rf2;
 
+import java.util.List;
+
 import org.ihtsdo.snomed.util.Type5UuidFactory;
 
 public class Relationship implements Comparable<Relationship> {
@@ -35,8 +37,10 @@ public class Relationship implements Comparable<Relationship> {
 	private String uuid;
 	private int group;
 	private Relationship replacement = null;
+	private int replacementNumber = 0;
 
 	private boolean needsReplaced = false;
+	private String replacedByAlg = "";
 
 	public static final int IDX_ID = 0;
 	public static final int IDX_EFFECTIVETIME = 1;
@@ -106,11 +110,11 @@ public class Relationship implements Comparable<Relationship> {
 		return lineValues[IDX_ACTIVE].equals(ACTIVE_FLAG);
 	}
 
-	public boolean isNeedsReplaced() {
+	public boolean needsReplaced() {
 		return needsReplaced;
 	}
 
-	public void setNeedsReplaced(boolean needsReplaced) {
+	public void needsReplaced(boolean needsReplaced) {
 		this.needsReplaced = needsReplaced;
 	}
 
@@ -122,13 +126,16 @@ public class Relationship implements Comparable<Relationship> {
 		return this.group;
 	}
 
-	public boolean matchesTypeAndGroup(Long typeId, int group) {
-		return matchesGroup(group) && this.typeId.equals(typeId);
-	}
-
-	public void setReplacement(Relationship replacementRelationship) {
+	public void setReplacement(Relationship replacementRelationship, String replacementAlgorithm) {
 		this.replacement = replacementRelationship;
-
+		replacementRelationship.replacedByAlg = replacementAlgorithm;
+		// Sometimes we replace relationships early if the entire group needs to move, so say we needed replacement in
+		// that case to keep the counts sane.
+		this.needsReplaced(true);
+		// Both the stated and the inferred relationship will take the same replacement number so we can match them up
+		int replacementNumber = this.sourceConcept.getNextReplacmentNumber();
+		this.replacementNumber = replacementNumber;
+		replacementRelationship.replacementNumber = replacementNumber;
 	}
 
 	public Long getSourceId() {
@@ -139,17 +146,12 @@ public class Relationship implements Comparable<Relationship> {
 		return new Long(lineValues[IDX_DESTINATIONID]);
 	}
 
-	public boolean matchesGroup(int group) {
-		return (this.group == group);
-	}
-
 	public boolean isType(Long thisType) {
 		return this.typeId.equals(thisType);
 	}
 
 	public String toString() {
-		return "[S: " + lineValues[IDX_SOURCEID] + ", D: " + lineValues[IDX_DESTINATIONID] + ", T: " + lineValues[IDX_TYPEID] + ", G: "
-				+ lineValues[IDX_RELATIONSHIPGROUP] + "] ";
+		return toString(false);
 	}
 
 	public String getRF2(String effectiveTime, String activeFlag, String chacteristicTypeId) {
@@ -195,6 +197,84 @@ public class Relationship implements Comparable<Relationship> {
 			return i;
 
 		return this.getDestinationId().compareTo(other.getDestinationId());
+	}
+
+	public String toString(boolean addStar) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("[S: ")
+			.append(lineValues[IDX_SOURCEID])
+			.append(", D: ")
+			.append(lineValues[IDX_DESTINATIONID])
+			.append(", T: ")
+			.append(lineValues[IDX_TYPEID])
+			.append( ", G: ")
+			.append(lineValues[IDX_RELATIONSHIPGROUP])
+			.append("] ");
+
+		if (hasReplacement() || isReplacement()) {
+			sb.append("(").append(replacementNumber);
+			if (isReplacement()) {
+				sb.append(" by ").append(replacedByAlg);
+			}
+			sb.append(")");
+		}
+	
+		if (addStar) {
+			sb.append("*");
+		}
+		return sb.toString();
+	}
+
+	public boolean isReplacement() {
+		return !replacedByAlg.isEmpty();
+	}
+
+	public boolean isGroup(int group) {
+		return this.group == group;
+	}
+
+	public int getReplacementNumber() {
+		return replacementNumber;
+	}
+
+	/*
+	 * If we're trying to replace a stated relationship with an inferred relationship in another group where that same type already exists
+	 * as a STATED group, then we'll try another match. UNLESS that stated relationship we're going to collide with also requires
+	 * replacment, in which case it will probably move out of the way as we often see group numbers incrementing through the classification
+	 * process. BUT for "is a" relationships, we need to check we're not picking an inferred relationship that already exists as a stated
+	 * relationship - ie check matching destination also since there are often many relationships of that type in group 0
+	 */
+	public boolean isSafelyReplacedBy(Relationship potentialReplacement) {
+		boolean isSafeReplacement = false;
+
+		if (this.isISA() && this.getSourceConcept().findMatchingRelationships(potentialReplacement).size() == 0) {
+			//This is an 'Is A' relationship, but there's no current stated 'Is A' relationships 
+			//identical to the proposed inferred relationship
+			isSafeReplacement = true;
+		} else {
+			// Are we replacing with different group? Is not a problem if we're staying in the same group
+			if (!this.isGroup(potentialReplacement.getGroup())) {
+				//Does the intended type/group already exist as a stated relationship, ie
+				//are we going to create a duplicate stated relationship?
+				List<Relationship> potentialDuplicates = this.getSourceConcept()
+						.findMatchingRelationships(potentialReplacement.getTypeId(), 
+													potentialReplacement.getGroup());
+				if (potentialDuplicates.size() == 0) {
+					isSafeReplacement = true;
+				} else {
+					//If the first potential duplicate is itself also needs replaced, then it
+					//will most likely shift group too (often the group increments) and so we'll 
+					//risk it.  
+					if (potentialDuplicates.get(0).needsReplaced()) {
+						isSafeReplacement = true;
+					}
+				}
+			} else {
+				// Replacing a stated relationship with one in the same group is safe
+				isSafeReplacement = true;
+			}
+		}
+		return isSafeReplacement;
 	}
 
 }

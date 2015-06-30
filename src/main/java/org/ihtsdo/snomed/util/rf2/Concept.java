@@ -24,6 +24,7 @@ public class Concept implements Comparable<Concept> {
 	private static Type5UuidFactory type5UuidFactory;
 
 	private int maxGroupId = 0; // How many groups are defined for this source concept?
+	private int replacmentNumber = 0; // counter to track/match stated relationships with their replacements
 
 	static {
 		try {
@@ -128,25 +129,9 @@ public class Concept implements Comparable<Concept> {
 		return allConcepts.get(conceptId);
 	}
 
-	public List<Relationship> findMatchingRelationships(Long typeId, int group, Concept statedDestinationConcept) {
-		// find relationships of this concept with the same type and group, and where the destination has the
-		// statedDestinationConcept as a parent.
-
-		// lets match on type and group first since it's cheap
-		List<Relationship> firstPassMatches = findMatchingRelationships(typeId, group);
-		List<Relationship> secondPassMatches = new ArrayList<Relationship>();
-
-		for (Relationship thisRelationship : firstPassMatches) {
-			if (thisRelationship.getDestinationConcept().hasParent(statedDestinationConcept)) {
-				secondPassMatches.add(thisRelationship);
-			}
-		}
-
-		return secondPassMatches;
-	}
 
 	public List<Relationship> findMatchingRelationships(Long typeId, Concept statedDestinationConcept) {
-		// find relationships of this concept with the same type and group, and where the destination has the
+		// find relationships of this concept with the same type, and where the destination has the
 		// statedDestinationConcept as a parent.
 
 		// lets match on type first since it's cheap
@@ -198,19 +183,51 @@ public class Concept implements Comparable<Concept> {
 		//find relationships of this concept with the same type and group
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship thisRelationship : attributes) {
-			if (thisRelationship.matchesTypeAndGroup(typeId, group)) {
+			if (thisRelationship.isType(typeId) && thisRelationship.isGroup(group)) {
 				matches.add(thisRelationship);
 			}
 		}
 		return matches;
 	}
 
-	public List<Relationship> findMatchingRelationships(Long typeId, Long destinationId, int group) {
+	/**
+	 * @param allowChildren
+	 *            if allowing children then allow more proximate destination and/or more proximate type
+	 * @return
+	 */
+	public List<Relationship> findMatchingRelationships(Long typeId, Long destinationId, int group, boolean allowChildOfDestination,
+			boolean allowChildOfType) {
 		// find relationships of this concept with the same type and group
+		Concept inferredDestination = Concept.getConcept(destinationId, CHARACTERISTIC.INFERRED);
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship thisRelationship : attributes) {
-			if (thisRelationship.matchesTypeAndGroup(typeId, group) && thisRelationship.getDestinationId().equals(destinationId)) {
+			if (thisRelationship.isGroup(group) && thisRelationship.isType(typeId)
+					&& thisRelationship.getDestinationId().equals(destinationId)) {
 				matches.add(thisRelationship);
+			}
+		}
+
+		// Are we allowing more proximate matches on destination?
+		if (allowChildOfDestination && matches.size() == 0) {
+			// First allow more proximate destination
+			for (Relationship thisRelationship : attributes) {
+				if (thisRelationship.isGroup(group) && thisRelationship.isType(typeId)
+						&& thisRelationship.destinationConcept.hasParent(inferredDestination)) {
+					matches.add(thisRelationship);
+				}
+			}
+		}
+
+		// Are we allowing more proximate matches on type?
+		if (allowChildOfType && matches.size() == 0) {
+			// Now allow more proximate type
+			Concept targetType = Concept.getConcept(typeId, CHARACTERISTIC.INFERRED);
+			for (Relationship thisRelationship : attributes) {
+				Concept potentialType = Concept.getConcept(typeId, CHARACTERISTIC.INFERRED);
+				if (thisRelationship.isGroup(group) && thisRelationship.destinationConcept.equals(inferredDestination)
+						&& potentialType.hasParent(targetType)) {
+					matches.add(thisRelationship);
+				}
 			}
 		}
 		return matches;
@@ -220,7 +237,7 @@ public class Concept implements Comparable<Concept> {
 		// find relationships of this concept with the group
 		List<Relationship> matches = new ArrayList<Relationship>();
 		for (Relationship thisRelationship : attributes) {
-			if (thisRelationship.matchesGroup(group)) {
+			if (thisRelationship.isGroup(group)) {
 				// Are we filtering out Is A relationships?
 				if (!filterIsAs || (filterIsAs && !thisRelationship.isType(Relationship.ISA_ID))) {
 					matches.add(thisRelationship);
@@ -238,7 +255,7 @@ public class Concept implements Comparable<Concept> {
 	public String getTriplesHash(int group) throws UnsupportedEncodingException {
 		String stringToHash = "";
 		for (Relationship thisRelationship : attributes) {
-			if (thisRelationship.matchesGroup(group)) {
+			if (thisRelationship.isGroup(group)) {
 				stringToHash += thisRelationship.getTripleString();
 			}
 		}
@@ -254,7 +271,7 @@ public class Concept implements Comparable<Concept> {
 			if (triplesHash.equals(getTriplesHash(groupId))) {
 				// Now find a relationship within that matching group which has this triple. Source is taken
 				// for granted since we're working from the concept
-				return findMatchingRelationships(sRelationship.getTypeId(), sRelationship.getDestinationId(), groupId);
+				return findMatchingRelationships(sRelationship.getTypeId(), sRelationship.getDestinationId(), groupId, false, false);
 			}
 		}
 		return null;
@@ -324,6 +341,20 @@ public class Concept implements Comparable<Concept> {
 
 	public String toString() {
 		return getSctId().toString();
+	}
+
+	/**
+	 * Matches on type, destination and group exactly
+	 * 
+	 * @param potentialReplacement
+	 * @return
+	 */
+	public List<Relationship> findMatchingRelationships(Relationship r) {
+		return findMatchingRelationships(r.getTypeId(), r.getDestinationId(), r.getGroup(), false, false);
+	}
+
+	public int getNextReplacmentNumber() {
+		return ++replacmentNumber;
 	}
 
 }
