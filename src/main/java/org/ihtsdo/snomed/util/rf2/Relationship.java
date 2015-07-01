@@ -242,12 +242,17 @@ public class Relationship implements Comparable<Relationship> {
 	 * as a STATED group, then we'll try another match. UNLESS that stated relationship we're going to collide with also requires
 	 * replacment, in which case it will probably move out of the way as we often see group numbers incrementing through the classification
 	 * process. BUT for "is a" relationships, we need to check we're not picking an inferred relationship that already exists as a stated
-	 * relationship - ie check matching destination also since there are often many relationships of that type in group 0
+	 * relationship - ie check matching destination also since there are often many relationships of that type in group 0 The earlier
+	 * algorithm - like a match on exact triple (algorithm 2) is pretty certain, so we won't worry about causing a duplicate with and
+	 * existing stated relationship in that case.
 	 */
-	public boolean isSafelyReplacedBy(Relationship potentialReplacement) {
+	public boolean isSafelyReplacedBy(Relationship potentialReplacement, boolean isCertain) {
 		boolean isSafeReplacement = false;
+		// Firstly, has this potential Replacement already been assigned as a replacement? Try and avoid if so
 
-		if (this.isISA() && this.getSourceConcept().findMatchingRelationships(potentialReplacement).size() == 0) {
+		if (potentialReplacement.isReplacement()) {
+			isSafeReplacement = false;
+		} else if (this.isISA() && this.getSourceConcept().findMatchingRelationships(potentialReplacement).size() == 0) {
 			//This is an 'Is A' relationship, but there's no current stated 'Is A' relationships 
 			//identical to the proposed inferred relationship
 			isSafeReplacement = true;
@@ -264,8 +269,8 @@ public class Relationship implements Comparable<Relationship> {
 				} else {
 					//If the first potential duplicate is itself also needs replaced, then it
 					//will most likely shift group too (often the group increments) and so we'll 
-					//risk it.  
-					if (potentialDuplicates.get(0).needsReplaced()) {
+					// risk it. Or if we can be pretty certain the algorithm is correct (eg Alg2)
+					if (potentialDuplicates.get(0).needsReplaced() || isCertain) {
 						isSafeReplacement = true;
 					}
 				}

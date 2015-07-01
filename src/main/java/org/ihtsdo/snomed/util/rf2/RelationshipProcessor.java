@@ -197,7 +197,7 @@ public class RelationshipProcessor {
 
 				// Try Algorithm ...er you can count I'm sure.
 				if (!successfulReplacement) {
-					successfulReplacement = matchMoreProximateType(thisStatedRelationship);
+					successfulReplacement = matchMoreProximateTypeAndDestination(thisStatedRelationship);
 				}
 			}
 		}
@@ -215,7 +215,7 @@ public class RelationshipProcessor {
 		Concept sourceInferred = Concept.getConcept(sRelationship.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
 		List<Relationship> replacements = sourceInferred.findMatchingRelationships(sRelationship.getTypeId(),
 				sRelationship.getDestinationId(), sRelationship.getGroup(), true, false);
-		success = attemptReplacement(sRelationship, replacements, "Alg1");
+		success = attemptReplacement(sRelationship, replacements, "Alg1", true);
 		if (success)
 			a1Count++;
 		return success;
@@ -234,7 +234,7 @@ public class RelationshipProcessor {
 		//Use the concept in the inferred graph
 		Concept sourceConceptInf = Concept.getConcept(sRelationship.getSourceId(), CHARACTERISTIC.INFERRED);
 		List<Relationship> replacements = sourceConceptInf.findMatchingRelationships(triplesHash, sRelationship);
-		success = attemptReplacement(sRelationship, replacements, "Alg2");
+		success = attemptReplacement(sRelationship, replacements, "Alg2", true);
 		if (success)
 			a2Count++;
 		return success;
@@ -281,7 +281,7 @@ public class RelationshipProcessor {
 				a3_2Count++;
 			}			
 		}
-		success = attemptReplacement(sRelationship, replacements, "Alg3");
+		success = attemptReplacement(sRelationship, replacements, "Alg3", false);
 		if (success)
 			a3Count++;
 		return success;
@@ -297,7 +297,7 @@ public class RelationshipProcessor {
 
 		Concept sourceInferred = Concept.getConcept(sRelationship.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
 		List<Relationship> replacements = sourceInferred.findMatchingRelationships(sRelationship.getTypeId(), sRelationship.getDestinationConcept());
-		success = attemptReplacement(sRelationship, replacements, "Alg4");
+		success = attemptReplacement(sRelationship, replacements, "Alg4", false);
 		if (success)
 			a4Count++;
 
@@ -308,44 +308,24 @@ public class RelationshipProcessor {
 	 * Algorithm 5 - find an inferred relationship where the relationship type is a child of the stated type and if that fails, try also
 	 * matching on the destination being a child of the stated destination
 	 */
-	private boolean matchMoreProximateType(Relationship sRelationship) {
+	private boolean matchMoreProximateTypeAndDestination(Relationship sRel) {
 		boolean success = false;
-		Concept sourceInferred = Concept.getConcept(sRelationship.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
-		Concept relationshipType = Concept.getConcept(sRelationship.getTypeId(), Relationship.CHARACTERISTIC.INFERRED);
-		List<Relationship> replacements = sourceInferred.findMatchingRelationships(relationshipType);
-		LOGGER.warn("Found multiple potential replacements for {} ({})", sRelationship.toString(), "Alg5");
-
-		// Now first try and find in that list a relationship where we have the same destination
-		for (Relationship thisPotentialReplacement : replacements) {
-			if (thisPotentialReplacement.getDestinationConcept().equals(sRelationship.getDestinationConcept())) {
-				sRelationship.setReplacement(thisPotentialReplacement, "Alg5.1");
-				a5Count++;
-				success = true;
-				break;
-			}
-		}
-		// And if not, try to find one with a child destination of the stated destination
-		if (!success) {
-			for (Relationship thisPotentialReplacement : replacements) {
-				if (thisPotentialReplacement.getDestinationConcept().hasParent(sRelationship.getDestinationConcept())) {
-					sRelationship.setReplacement(thisPotentialReplacement, "Alg5.2");
-					a5Count++;
-					success = true;
-					break;
-				}
-			}
-		}
+		Concept sourceInferred = Concept.getConcept(sRel.getSourceId(), Relationship.CHARACTERISTIC.INFERRED);
+		List<Relationship> replacements = sourceInferred.findMatchingRelationships(sRel.getTypeId(), sRel.getDestinationId(), true, true);
+		success = attemptReplacement(sRel, replacements, "Alg5", false);
+		if (success)
+			a5Count++;
 
 		return success;
 	}
 
-	private boolean attemptReplacement(Relationship sRel, List<Relationship> replacements, String algorithmUsed) {
+	private boolean attemptReplacement(Relationship sRel, List<Relationship> replacements, String algorithmUsed, boolean algorithmIsCertain) {
 		boolean replacementMade = false;
 
 		int attempt = 0;
 		for (; replacements != null && !replacementMade && attempt < replacements.size(); attempt++) {
 			Relationship potentialReplacement = replacements.get(attempt);
-			if (sRel.isSafelyReplacedBy(potentialReplacement)) {
+			if (sRel.isSafelyReplacedBy(potentialReplacement, algorithmIsCertain)) {
 				sRel.setReplacement(potentialReplacement, algorithmUsed);
 				replacementMade = true;
 				// If we've moved group, then any group siblings should move to the same group if AT ALL POSSIBLE ie match on
@@ -354,13 +334,13 @@ public class RelationshipProcessor {
 					moveGroupSiblings(sRel, potentialReplacement.getGroup());
 				}
 			} else {
-				LOGGER.warn("Avoided potentially safe replacement - {} in {}", potentialReplacement, algorithmUsed);
+				LOGGER.warn("Avoided potentially unsafe replacement for {} - {} in {}", sRel, potentialReplacement, algorithmUsed);
 			}
 		}
 
 		if (replacementMade) {
 			if (replacements.size() > attempt) {
-				LOGGER.warn("Found multiple potential replacements for {} in {}", sRel.toString(), algorithmUsed);
+				LOGGER.warn("Found multiple potential replacements for {} in {}", sRel, algorithmUsed);
 			}
 		}
 		return replacementMade;
@@ -383,6 +363,7 @@ public class RelationshipProcessor {
 				List<Relationship> potentialMatches = inferredSource.findMatchingRelationships(statedSibling.getTypeId(),
 						statedSibling.getDestinationId(), targetGroup, true, true);
 				if (potentialMatches.size() > 0) {
+					// We will not "try" this replacement because group moves take priority
 					statedSibling.setReplacement(potentialMatches.get(0), "AlgMGS");
 				}
 			}

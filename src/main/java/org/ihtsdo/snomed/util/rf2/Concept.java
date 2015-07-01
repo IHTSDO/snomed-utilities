@@ -223,13 +223,62 @@ public class Concept implements Comparable<Concept> {
 			// Now allow more proximate type
 			Concept targetType = Concept.getConcept(typeId, CHARACTERISTIC.INFERRED);
 			for (Relationship thisRelationship : attributes) {
-				Concept potentialType = Concept.getConcept(typeId, CHARACTERISTIC.INFERRED);
+				Concept potentialType = Concept.getConcept(thisRelationship.getTypeId(), CHARACTERISTIC.INFERRED);
 				if (thisRelationship.isGroup(group) && thisRelationship.destinationConcept.equals(inferredDestination)
 						&& potentialType.hasParent(targetType)) {
 					matches.add(thisRelationship);
 				}
 			}
 		}
+		return matches;
+	}
+
+	/**
+	 * @param allowChildren
+	 *            if allowing children then allow more proximate destination and/or more proximate type
+	 * @return
+	 */
+	public List<Relationship> findMatchingRelationships(Long typeId, Long destinationId, boolean allowChildOfDestination,
+			boolean allowChildOfType) {
+		// find relationships of this concept with the same type and destination
+		List<Relationship> matches = new ArrayList<Relationship>();
+		for (Relationship thisRelationship : attributes) {
+			if (thisRelationship.isType(typeId) && thisRelationship.getDestinationId().equals(destinationId)) {
+				matches.add(thisRelationship);
+			}
+		}
+
+		// Are we allowing more proximate matches on type?
+		Concept inferredDestination = Concept.getConcept(destinationId, CHARACTERISTIC.INFERRED);
+		Concept targetType = Concept.getConcept(typeId, CHARACTERISTIC.INFERRED);
+		if (allowChildOfType) {
+			for (Relationship thisRelationship : attributes) {
+				Concept potentialType = Concept.getConcept(thisRelationship.getTypeId(), CHARACTERISTIC.INFERRED);
+				if (thisRelationship.destinationConcept.equals(inferredDestination) && potentialType.hasParent(targetType)) {
+					matches.add(thisRelationship);
+				}
+			}
+		}
+
+		// Are we allowing more proximate matches on destination?
+		if (allowChildOfDestination) {
+			for (Relationship thisRelationship : attributes) {
+				if (thisRelationship.isType(typeId) && thisRelationship.destinationConcept.hasParent(inferredDestination)) {
+					matches.add(thisRelationship);
+				}
+			}
+		}
+
+		// Are we allowing more proximate matches on both?
+		if (allowChildOfDestination && allowChildOfType) {
+			for (Relationship thisRelationship : attributes) {
+				Concept potentialType = Concept.getConcept(thisRelationship.getTypeId(), CHARACTERISTIC.INFERRED);
+				if (potentialType.hasParent(targetType) && thisRelationship.destinationConcept.hasParent(inferredDestination)) {
+					matches.add(thisRelationship);
+				}
+			}
+		}
+
 		return matches;
 	}
 
