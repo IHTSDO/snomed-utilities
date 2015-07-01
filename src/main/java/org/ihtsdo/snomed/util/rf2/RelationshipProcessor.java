@@ -38,9 +38,15 @@ public class RelationshipProcessor {
 	private final String statedFile;
 	private final String inferredFile;
 	private String outputFile;
+	// The additional file contains relationships we want to just pass straight through to the stated output
+	private String additionalFile;
+
+	private static boolean LEAVE_SCTID_AS_IS = false;
+	private static boolean SET_SCTID_TO_NULL = true;
 
 	private Map<String, Relationship> statedRelationships;
 	private Map<String, Relationship> inferredRelationships;
+	private Map<String, Relationship> additionalRelationships;
 
 	// Counters to track how many replacements made by each algorithm
 	private int a1Count = 0;
@@ -53,39 +59,26 @@ public class RelationshipProcessor {
 
 	private String outputEffectiveTime;
 
-	public RelationshipProcessor(String statedFile, String inferredFile, String outputFile) {
-		this(statedFile, inferredFile);
+	public RelationshipProcessor(String statedFile, String inferredFile, String additionalFile, String outputFile) {
+		this.statedFile = statedFile;
+		this.inferredFile = inferredFile;
+		this.additionalFile = additionalFile;
 		this.outputFile = outputFile;
 	}
 
-	public RelationshipProcessor(String statedFile, String inferredFile) {
-		this.statedFile = statedFile;
-		this.inferredFile = inferredFile;
-	}
-
 	public static void main(String[] args) throws Exception {
-		if (args.length < 3) {
+		if (args.length < 4) {
 			doHelp();
 		}
 
-		RelationshipProcessor rp;
-		// Is the 3rd parameter a number? Output the relationships for that SCTID if so
-		try {
-			Long conceptSCTID = new Long(args[2]);
-			rp = new RelationshipProcessor(args[0], args[1]);
-			rp.loadRelationships();
-			rp.outputRelationships(conceptSCTID);
-
-		} catch (NumberFormatException e) {
-			rp = new RelationshipProcessor(args[0], args[1], args[2]);
-			// Make sure we have a valid effectiveTime for output, before we start
-			rp.outputEffectiveTime = extractEffectiveTime(args[2]);
-			rp.loadRelationships();
-			rp.substituteInferredRelationships();
-		}
+		RelationshipProcessor rp = new RelationshipProcessor(args[0], args[1], args[2], args[3]);
+		// Make sure we have a valid effectiveTime for output, before we start
+		rp.outputEffectiveTime = extractEffectiveTime(args[2]);
+		rp.loadRelationships();
+		rp.substituteInferredRelationships();
 
 		// Are we running in interactive mode? Query memory structures if so
-		if (args.length == 4 && args[3].equals("-i")) {
+		if (args.length == 5 && args[4].equals("-i")) {
 			rp.goInteractive();
 		}
 	}
@@ -130,10 +123,13 @@ public class RelationshipProcessor {
 	private void loadRelationships() throws Exception {
 
 		LOGGER.debug("Loading Stated File: {}", statedFile);
-		statedRelationships = loadFile(statedFile, Relationship.CHARACTERISTIC.STATED);
+		statedRelationships = loadFile(statedFile, Relationship.CHARACTERISTIC.STATED, false); // Not optional
 
 		LOGGER.debug("Loading Inferred File: {}", inferredFile);
-		inferredRelationships = loadFile(inferredFile, Relationship.CHARACTERISTIC.INFERRED);
+		inferredRelationships = loadFile(inferredFile, Relationship.CHARACTERISTIC.INFERRED, false);
+
+		LOGGER.debug("Loading Additional File: {}", additionalFile);
+		additionalRelationships = loadFile(additionalFile, Relationship.CHARACTERISTIC.ADDITIONAL, true); // Optional
 
 		LOGGER.debug("Loading complete");
 
@@ -393,13 +389,20 @@ public class RelationshipProcessor {
 
 	}
 
-	private Map<String, Relationship> loadFile(String filePath, Relationship.CHARACTERISTIC characteristic) throws Exception {
+	private Map<String, Relationship> loadFile(String filePath, Relationship.CHARACTERISTIC characteristic, boolean optional)
+			throws Exception {
 		// Does this file exist and not as a directory?
 		File file = new File(filePath);
-		if (!file.exists() || file.isDirectory()) {
-			throw new IOException("Unable to read file " + filePath);
-		}
 		Map<String, Relationship> loadedRelationships = new HashMap<String, Relationship>();
+
+		if (!file.exists() || file.isDirectory()) {
+			if (optional) {
+				LOGGER.info("Skipping {} relationship file: {}", characteristic.toString(), filePath);
+				return loadedRelationships;
+			} else {
+				throw new IOException("Unable to read file " + filePath);
+			}
+		}
 
 		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 			String line;
@@ -429,18 +432,25 @@ public class RelationshipProcessor {
 				new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
 			// Loop through all stated relationships and disable the replaced ones
 			// and output the replacements all with effective time which matches the output file
+
 			writer.write(Relationship.HEADER_ROW);
 			for (Relationship thisRelationship : statedRelationships.values()) {
 				// If a stated relationship doesn't exist in the inferred file, then we need to remove it in any event.
 				if (thisRelationship.needsReplaced()) {
 					writer.write(thisRelationship.getRF2(outputEffectiveTime, Relationship.INACTIVE_FLAG,
-							Relationship.CHARACTERISTIC_STATED_SCTID));
+							Relationship.CHARACTERISTIC_STATED_SCTID, LEAVE_SCTID_AS_IS));
 				}
 				// if it has a replacement, we can write that
 				if (thisRelationship.hasReplacement()) {
 					writer.write(thisRelationship.getReplacement().getRF2(outputEffectiveTime, Relationship.ACTIVE_FLAG,
-							Relationship.CHARACTERISTIC_STATED_SCTID));
+							Relationship.CHARACTERISTIC_STATED_SCTID, SET_SCTID_TO_NULL));
 				}
+			}
+
+			// And output any additional relationships we may be have asked to include
+			for (Relationship thisRelationship : additionalRelationships.values()) {
+				writer.write(thisRelationship
+						.getRF2(outputEffectiveTime, null, Relationship.CHARACTERISTIC_STATED_SCTID, SET_SCTID_TO_NULL));
 			}
 		}
 

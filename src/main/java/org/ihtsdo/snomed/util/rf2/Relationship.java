@@ -16,7 +16,7 @@ public class Relationship implements Comparable<Relationship> {
 	public static final String HEADER_ROW = "id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId\r\n";
 
 	public static enum CHARACTERISTIC {
-		STATED, INFERRED
+		STATED, INFERRED, ADDITIONAL
 	};
 
 	private static Type5UuidFactory type5UuidFactory;
@@ -154,14 +154,23 @@ public class Relationship implements Comparable<Relationship> {
 		return toString(false);
 	}
 
-	public String getRF2(String effectiveTime, String activeFlag, String chacteristicTypeId) {
+	public String getRF2(String effectiveTime, String activeFlag, String chacteristicTypeId, boolean wipeSCTID) {
 		StringBuffer sb = new StringBuffer();
 		// Output all columns, replacing effectiveTime, active and chacteristicTypeId to passed in values
 		for (int columnIdx = 0; columnIdx <= MAX_COLUMN; columnIdx++) {
-			if (columnIdx == IDX_EFFECTIVETIME) {
+			if (columnIdx == IDX_ID) {
+				if (!wipeSCTID) {
+					sb.append(lineValues[IDX_ID]);
+				} // otherwise we'll drop straight through to the tab separator
+			} else if (columnIdx == IDX_EFFECTIVETIME) {
 				sb.append(effectiveTime);
 			} else if (columnIdx == IDX_ACTIVE) {
-				sb.append(activeFlag);
+				// If active flag has not been specified, use current value
+				if (activeFlag == null) {
+					sb.append(lineValues[IDX_ACTIVE]);
+				} else {
+					sb.append(activeFlag);
+				}
 			} else if (columnIdx == IDX_CHARACTERISTICTYPEID) {
 				sb.append(chacteristicTypeId);
 			} else {
