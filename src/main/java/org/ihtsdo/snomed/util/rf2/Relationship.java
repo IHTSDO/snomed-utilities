@@ -3,8 +3,13 @@ package org.ihtsdo.snomed.util.rf2;
 import java.util.List;
 
 import org.ihtsdo.snomed.util.Type5UuidFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Relationship implements Comparable<Relationship> {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(Relationship.class);
+
 
 	// id effectiveTime active moduleId sourceId destinationId relationshipGroup typeId characteristicTypeId modifierId
 	public static final Long ISA_ID = new Long(116680003);
@@ -37,10 +42,15 @@ public class Relationship implements Comparable<Relationship> {
 	private String uuid;
 	private int group;
 	private Relationship replacement = null;
+	private Relationship isReplacementFor = null;
 	private int replacementNumber = 0;
 
 	private boolean needsReplaced = false;
 	private String replacedByAlg = "";
+
+	// If we're replacing a stated relationship that already exists, we can just
+	// suppress this replacement and allow the stated relationship to remain
+	private boolean suppressOutput = false;
 
 	public static final int IDX_ID = 0;
 	public static final int IDX_EFFECTIVETIME = 1;
@@ -54,7 +64,8 @@ public class Relationship implements Comparable<Relationship> {
 	public static final int IDX_MODIFIERID = 9;
 	public static final int MAX_COLUMN = 9;
 
-
+	public static final String STATED_UUID_MODIFIER = "S";
+	
 	private String[] lineValues;
 
 	// Was originally splitting the string in the constructor, but expensive to create object
@@ -64,7 +75,9 @@ public class Relationship implements Comparable<Relationship> {
 		typeId = new Long(getField(IDX_TYPEID));
 		group = Integer.parseInt(getField(IDX_RELATIONSHIPGROUP));
 		uuid = type5UuidFactory.get(
-				getTripleString() + lineValues[IDX_RELATIONSHIPGROUP])
+				getTripleString() 
+				+ lineValues[IDX_RELATIONSHIPGROUP]
+				+ STATED_UUID_MODIFIER)
 				.toString();
 		// If this relationship is an "IS A" then add that to the concept
 		Concept.addRelationship(this, characteristic);
@@ -127,6 +140,14 @@ public class Relationship implements Comparable<Relationship> {
 	}
 
 	public void setReplacement(Relationship replacementRelationship, String replacementAlgorithm) {
+
+		// Is this replacement already in use? Remove it from the original stated relationship if so.
+		if (replacementRelationship.isReplacement()) {
+			Relationship originallyReplacedRelationship = replacementRelationship.isReplacementFor();
+			LOGGER.warn("Replacement {} removed from {} ", replacementRelationship, originallyReplacedRelationship);
+			originallyReplacedRelationship.removeReplacement();
+		}
+
 		this.replacement = replacementRelationship;
 		replacementRelationship.replacedByAlg = replacementAlgorithm;
 		// Sometimes we replace relationships early if the entire group needs to move, so say we needed replacement in
@@ -136,6 +157,15 @@ public class Relationship implements Comparable<Relationship> {
 		int replacementNumber = this.sourceConcept.getNextReplacmentNumber();
 		this.replacementNumber = replacementNumber;
 		replacementRelationship.replacementNumber = replacementNumber;
+
+		// The replacement will also need to know what it's replacing
+		replacementRelationship.isReplacementFor(this);
+	}
+
+	private void removeReplacement() {
+		this.replacedByAlg = "";
+		this.replacement = null;
+		this.replacementNumber = 0;
 	}
 
 	public Long getSourceId() {
@@ -231,11 +261,12 @@ public class Relationship implements Comparable<Relationship> {
 		if (addStar) {
 			sb.append("*");
 		}
+		
+		if (isReplacement()) {
+			sb.append(" [")
+.append(uuid).append("]");
+		}
 		return sb.toString();
-	}
-
-	public boolean isReplacement() {
-		return !replacedByAlg.isEmpty();
 	}
 
 	public boolean isGroup(int group) {
@@ -289,6 +320,26 @@ public class Relationship implements Comparable<Relationship> {
 			}
 		}
 		return isSafeReplacement;
+	}
+
+	public Relationship isReplacementFor() {
+		return isReplacementFor;
+	}
+
+	public boolean isReplacement() {
+		return isReplacementFor != null;
+	}
+
+	public void isReplacementFor(Relationship isReplacementFor) {
+		this.isReplacementFor = isReplacementFor;
+	}
+
+	public boolean suppressOutput() {
+		return suppressOutput;
+	}
+
+	public void suppressOutput(boolean suppressOutput) {
+		this.suppressOutput = suppressOutput;
 	}
 
 }

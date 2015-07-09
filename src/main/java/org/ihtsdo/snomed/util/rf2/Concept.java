@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,6 +26,8 @@ public class Concept implements Comparable<Concept> {
 
 	private int maxGroupId = 0; // How many groups are defined for this source concept?
 	private int replacmentNumber = 0; // counter to track/match stated relationships with their replacements
+
+	public static int MAX_PARENTS = 500; // Prevent circular recursion when finding all parents
 
 	static {
 		try {
@@ -177,6 +180,29 @@ public class Concept implements Comparable<Concept> {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Recursively work through all parents and add them to the list
+	 * 
+	 * @param parents
+	 * @return
+	 * @throws Exception
+	 */
+	public Iterable<Concept> listParents(LinkedHashSet<Concept> hierarchyList) throws Exception {
+		boolean firstSeen;
+		for (Concept thisParent : parents) {
+			firstSeen = hierarchyList.add(thisParent);
+			if (hierarchyList.size() > MAX_PARENTS) {
+				// Protect code from circular relationships
+				throw new Exception("Number of parents exceeded configured maximum");
+			}
+			// If we've not seen this concept before, iterate it's parents also
+			if (firstSeen) {
+				thisParent.listParents(hierarchyList);
+			}
+		}
+		return hierarchyList;
 	}
 
 	public List<Relationship> findMatchingRelationships(Long typeId, int group) {
@@ -389,7 +415,23 @@ public class Concept implements Comparable<Concept> {
 	}
 
 	public String toString() {
-		return getSctId().toString();
+		// Add indicator to show if this concept needs to have it's relationships replaced
+		return getSctId().toString() + (hasModifiedRelationships() ? " *" : "");
+	}
+
+	/**
+	 * 
+	 * @return true if any of the attributes owned by this concept have been replaced
+	 */
+	private boolean hasModifiedRelationships() {
+		boolean relationshipNeedsReplaced = false;
+		for (Relationship thisAttribute : attributes) {
+			if (thisAttribute.needsReplaced() || thisAttribute.isReplacement()) {
+				relationshipNeedsReplaced = true;
+				break;
+			}
+		}
+		return relationshipNeedsReplaced;
 	}
 
 	/**

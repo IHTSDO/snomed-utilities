@@ -13,6 +13,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -73,7 +74,7 @@ public class RelationshipProcessor {
 
 		RelationshipProcessor rp = new RelationshipProcessor(args[0], args[1], args[2], args[3]);
 		// Make sure we have a valid effectiveTime for output, before we start
-		rp.outputEffectiveTime = extractEffectiveTime(args[2]);
+		rp.outputEffectiveTime = extractEffectiveTime(args[3]);
 		rp.loadRelationships();
 		rp.substituteInferredRelationships();
 
@@ -87,23 +88,35 @@ public class RelationshipProcessor {
 	 * Lookup the concept in both the stated and inferred graphs and output all the relationships (sorted naturally) for each
 	 * 
 	 * @param conceptSCTID
+	 * @throws Exception
 	 */
-	private void outputRelationships(Long conceptSCTID) {
-		// First find the concept in the Stated View
+	private void outputConcept(Long conceptSCTID) throws Exception {
+
+		// Output all the parents of this concept in the
+		Concept conceptInferred = Concept.getConcept(conceptSCTID, CHARACTERISTIC.INFERRED);
+
+		if (conceptInferred == null) {
+			LOGGER.info("Concept {} not found in inferred view.", conceptSCTID);
+			return;
+		}
+		LOGGER.info(conceptInferred + " - Inferred IS A Hierarchy: ");
+		Iterable<Concept> parents = conceptInferred.listParents(new LinkedHashSet<Concept>());
+		for (Concept thisParent : parents) {
+			LOGGER.info(thisParent.toString());
+		}
+		LOGGER.info("");
+
+		// Now find the concept in the Stated View
 		Concept conceptStated = Concept.getConcept(conceptSCTID, CHARACTERISTIC.STATED);
 
 		if (conceptStated == null) {
-			LOGGER.info("Concept {} not found.", conceptSCTID);
+			LOGGER.info("Concept {} not found in stated view.", conceptSCTID);
 			return;
 		}
 
 		TreeSet<Relationship> statedRels = conceptStated.getAttributes();
 
-		// Keep a track of replacements selected for the stated view, and indicate those in the
-		// inferred view
-		List<Relationship> replacements = new ArrayList<Relationship>();
-
-		LOGGER.info(conceptSCTID.toString() + " stated view: ");
+		LOGGER.info(conceptSCTID.toString() + " - attributes stated view: ");
 		boolean addStar = false;
 		for (Relationship thisRelationship : statedRels) {
 			addStar = thisRelationship.needsReplaced();
@@ -111,9 +124,8 @@ public class RelationshipProcessor {
 
 		}
 
-		Concept conceptInferred = Concept.getConcept(conceptSCTID, CHARACTERISTIC.INFERRED);
 		TreeSet<Relationship> inferredRels = conceptInferred.getAttributes();
-		LOGGER.info(conceptSCTID.toString() + " inferred view: ");
+		LOGGER.info(conceptSCTID.toString() + " - attributes inferred view: ");
 		for (Relationship thisRelationship : inferredRels) {
 			addStar = thisRelationship.isReplacement();
 			LOGGER.info(thisRelationship.toString(addStar));
@@ -159,6 +171,7 @@ public class RelationshipProcessor {
 	private void findReplacements()
 			throws UnsupportedEncodingException {
 
+		LOGGER.debug("Pass 1");
 		// First pass, mark all stated relationships that might need replaced. Do this now so we can
 		// allow potential duplicates to temporarily exist if the prior existing duplicate is also going to be changed.
 		for (Relationship thisStatedRelationship : statedRelationships.values()) {
@@ -168,34 +181,47 @@ public class RelationshipProcessor {
 			}
 		}
 
-		// Second pass
+		LOGGER.debug("Pass 2");
 		for (Relationship thisStatedRelationship : statedRelationships.values()) {
 			// If it's already been replaced (because it already moved as part of a group) then skip
 			if (thisStatedRelationship.needsReplaced() && !thisStatedRelationship.hasReplacement()) {
-				boolean successfulReplacement = false;
-				//Try Algorithm 1
-				successfulReplacement = matchGroupPlusChildDestination(thisStatedRelationship);
-				
-				//Try Algorithm 2
-				if (!successfulReplacement) {
-					successfulReplacement = matchTriplesAcrossGroups(thisStatedRelationship);
-				}
-				
-				//Try Algorithm 3
-				if (!successfulReplacement) {
-					successfulReplacement = matchChildDestinationInOtherGroups(thisStatedRelationship);
-				}
-
-				// Try Algorithm 4
-				if (!successfulReplacement) {
-					successfulReplacement = matchLooselyInOtherGroups(thisStatedRelationship);
-				}
-
-				// Try Algorithm ...er you can count I'm sure.
-				if (!successfulReplacement) {
-					successfulReplacement = matchMoreProximateTypeAndDestination(thisStatedRelationship);
-				}
+				attemptToReplace(thisStatedRelationship);
 			}
+		}
+
+		LOGGER.debug("Pass 3");// Third pass for replacements that have been removed by more confident subsequent matches
+		for (Relationship thisStatedRelationship : statedRelationships.values()) {
+			// If it's already been replaced (because it already moved as part of a group) then skip
+			if (thisStatedRelationship.needsReplaced() && !thisStatedRelationship.hasReplacement()) {
+				attemptToReplace(thisStatedRelationship);
+			}
+		}
+
+	}
+
+	private void attemptToReplace(Relationship thisStatedRelationship) throws UnsupportedEncodingException {
+		boolean successfulReplacement = false;
+		// Try Algorithm 1
+		successfulReplacement = matchGroupPlusChildDestination(thisStatedRelationship);
+
+		// Try Algorithm 2
+		if (!successfulReplacement) {
+			successfulReplacement = matchTriplesAcrossGroups(thisStatedRelationship);
+		}
+
+		// Try Algorithm 3
+		if (!successfulReplacement) {
+			successfulReplacement = matchChildDestinationInOtherGroups(thisStatedRelationship);
+		}
+
+		// Try Algorithm 4
+		if (!successfulReplacement) {
+			successfulReplacement = matchLooselyInOtherGroups(thisStatedRelationship);
+		}
+
+		// Try Algorithm ...er you can count I'm sure.
+		if (!successfulReplacement) {
+			successfulReplacement = matchMoreProximateTypeAndDestination(thisStatedRelationship);
 		}
 
 	}
@@ -428,6 +454,8 @@ public class RelationshipProcessor {
 
 	private void outputFile() throws FileNotFoundException, IOException {
 
+		LOGGER.info("Writing file to {} with effective time {}", outputFile, outputEffectiveTime);
+
 		try (Writer writer = new BufferedWriter(
 				new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
 			// Loop through all stated relationships and disable the replaced ones
@@ -437,11 +465,22 @@ public class RelationshipProcessor {
 			for (Relationship thisRelationship : statedRelationships.values()) {
 				// If a stated relationship doesn't exist in the inferred file, then we need to remove it in any event.
 				if (thisRelationship.needsReplaced()) {
-					writer.write(thisRelationship.getRF2(outputEffectiveTime, Relationship.INACTIVE_FLAG,
+					// If this exact triple+group has been assigned as the replacement of another relationship, then
+					// we don't want to inactivate it. In fact at that point, we can suppress both lines as this
+					// stated relationship will remain active
+					Relationship inferredEquivalent = inferredRelationships.get(thisRelationship.getUuid());
+
+					if (inferredEquivalent != null && inferredEquivalent.isReplacement()) {
+						LOGGER.info("Suppressing inactivation of {}, as it's also a replacement for {}", thisRelationship,
+								inferredEquivalent.isReplacementFor());
+						inferredEquivalent.suppressOutput(true);
+					} else {
+						writer.write(thisRelationship.getRF2(outputEffectiveTime, Relationship.INACTIVE_FLAG,
 							Relationship.CHARACTERISTIC_STATED_SCTID, LEAVE_SCTID_AS_IS));
+					}
 				}
 				// if it has a replacement, we can write that
-				if (thisRelationship.hasReplacement()) {
+				if (thisRelationship.hasReplacement() && !thisRelationship.getReplacement().suppressOutput()) {
 					writer.write(thisRelationship.getReplacement().getRF2(outputEffectiveTime, Relationship.ACTIVE_FLAG,
 							Relationship.CHARACTERISTIC_STATED_SCTID, SET_SCTID_TO_NULL));
 				}
@@ -480,21 +519,17 @@ public class RelationshipProcessor {
 				}
 			}
 		}
-		// Output the full definition for the last concept mentioned
-		if (lastRelationship != null) {
-			outputRelationships(lastRelationship.getSourceId());
-		}
 
 	}
 
-	private void goInteractive() {
+	private void goInteractive() throws NumberFormatException, Exception {
 		String sctid = "";
 		try (Scanner in = new Scanner(System.in)) {
 			while (!sctid.equals("quit")) {
 				System.out.println("Enter source concept sctid: ");
 				sctid = in.nextLine().trim();
 				if (!sctid.equals("quit")) {
-					outputRelationships(new Long(sctid));
+					outputConcept(new Long(sctid));
 				}
 			}
 		}
