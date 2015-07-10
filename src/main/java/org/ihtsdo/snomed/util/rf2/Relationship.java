@@ -148,8 +148,15 @@ public class Relationship implements Comparable<Relationship> {
 			originallyReplacedRelationship.removeReplacement();
 		}
 
+		// Does THIS relationship already have a replacement that is being usurped? Remove it from the obligation if so
+		if (this.hasReplacement()) {
+			LOGGER.warn("{} being told to replace {} for {}", this, this.replacement, replacementRelationship);
+			this.replacement.isReplacementFor(null);
+		}
+
 		this.replacement = replacementRelationship;
 		replacementRelationship.replacedByAlg = replacementAlgorithm;
+		this.replacedByAlg = replacementAlgorithm;
 		// Sometimes we replace relationships early if the entire group needs to move, so say we needed replacement in
 		// that case to keep the counts sane.
 		this.needsReplaced(true);
@@ -251,11 +258,9 @@ public class Relationship implements Comparable<Relationship> {
 			.append("] ");
 
 		if (hasReplacement() || isReplacement()) {
-			sb.append("(").append(replacementNumber);
-			if (isReplacement()) {
-				sb.append(" by ").append(replacedByAlg);
-			}
-			sb.append(")");
+			sb.append("(").append(replacementNumber)
+				.append(" by ").append(replacedByAlg)
+				.append(")");
 		}
 	
 		if (addStar) {

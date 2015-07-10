@@ -21,6 +21,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.output.NullOutputStream;
 import org.ihtsdo.snomed.util.rf2.Relationship.CHARACTERISTIC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,7 +163,12 @@ public class RelationshipProcessor {
 
 		// Output the file, deactivating the replaced, adding the replacments and both should
 		// have the target effectivetime
-		outputFile();
+
+		// We'll do a first pass dry run so as to capture any replacements which we don't infact want to
+		// output because they'd replace already present stated relationships leading to the same triple/group
+		// being activated/inactivated in the same file - with the results being file order dependent
+		outputFile(true);
+		outputFile(false);
 
 		// And lets find out about the relationships we've failed to sort
 		reportFailures();
@@ -185,7 +191,7 @@ public class RelationshipProcessor {
 		for (Relationship thisStatedRelationship : statedRelationships.values()) {
 			// If it's already been replaced (because it already moved as part of a group) then skip
 			if (thisStatedRelationship.needsReplaced() && !thisStatedRelationship.hasReplacement()) {
-				attemptToReplace(thisStatedRelationship);
+				findReplacement(thisStatedRelationship);
 			}
 		}
 
@@ -193,13 +199,13 @@ public class RelationshipProcessor {
 		for (Relationship thisStatedRelationship : statedRelationships.values()) {
 			// If it's already been replaced (because it already moved as part of a group) then skip
 			if (thisStatedRelationship.needsReplaced() && !thisStatedRelationship.hasReplacement()) {
-				attemptToReplace(thisStatedRelationship);
+				findReplacement(thisStatedRelationship);
 			}
 		}
 
 	}
 
-	private void attemptToReplace(Relationship thisStatedRelationship) throws UnsupportedEncodingException {
+	private void findReplacement(Relationship thisStatedRelationship) throws UnsupportedEncodingException {
 		boolean successfulReplacement = false;
 		// Try Algorithm 1
 		successfulReplacement = matchGroupPlusChildDestination(thisStatedRelationship);
@@ -452,12 +458,12 @@ public class RelationshipProcessor {
 		return loadedRelationships;
 	}
 
-	private void outputFile() throws FileNotFoundException, IOException {
+	private void outputFile(boolean dryRun) throws FileNotFoundException, IOException {
 
-		LOGGER.info("Writing file to {} with effective time {}", outputFile, outputEffectiveTime);
+		LOGGER.info("Writing file to {} with effective time {}", (dryRun? "Dry Run Only" : outputFile), outputEffectiveTime);
 
 		try (Writer writer = new BufferedWriter(
-				new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
+				new OutputStreamWriter(dryRun ? new NullOutputStream() : new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
 			// Loop through all stated relationships and disable the replaced ones
 			// and output the replacements all with effective time which matches the output file
 
