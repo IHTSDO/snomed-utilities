@@ -1,4 +1,4 @@
-package org.ihtsdo.snomed.util.rf2;
+package org.ihtsdo.snomed.util.rf2.srsi;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.ihtsdo.snomed.util.Type5UuidFactory;
-import org.ihtsdo.snomed.util.rf2.Relationship.CHARACTERISTIC;
 import org.ihtsdo.snomed.util.rf2.schema.SchemaFactory;
+import org.ihtsdo.snomed.util.rf2.srsi.Relationship.CHARACTERISTIC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

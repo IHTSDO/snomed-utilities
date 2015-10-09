@@ -1,4 +1,4 @@
-package org.ihtsdo.snomed.util.rf2;
+package org.ihtsdo.snomed.util.rf2.srsi;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

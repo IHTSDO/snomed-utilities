@@ -1,4 +1,4 @@
-package org.ihtsdo.snomed.util.rf2;
+package org.ihtsdo.snomed.util.rf2.srsi;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -22,7 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.output.NullOutputStream;
-import org.ihtsdo.snomed.util.rf2.Relationship.CHARACTERISTIC;
+import org.ihtsdo.snomed.util.rf2.srsi.Relationship.CHARACTERISTIC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
