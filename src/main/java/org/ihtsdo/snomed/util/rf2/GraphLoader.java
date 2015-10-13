@@ -1,30 +1,15 @@
 package org.ihtsdo.snomed.util.rf2;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
-import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.apache.commons.io.output.NullOutputStream;
+import org.ihtsdo.snomed.util.pojo.Concept;
 import org.ihtsdo.snomed.util.pojo.Relationship;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
-import org.ihtsdo.snomed.util.rf2.srsi.Relationship.CHARACTERISTIC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,38 +24,40 @@ public class GraphLoader implements RF2SchemaConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
 
+	private final String conceptFile;
 	private final String statedFile;
 	private final String inferredFile;
+
 
 	private Map<String, Relationship> statedRelationships;
 	private Map<String, Relationship> inferredRelationships;
 
-	public GraphLoader(String statedFile, String inferredFile) {
+	public GraphLoader(String conceptFile, String statedFile, String inferredFile) {
+		this.conceptFile = conceptFile;
 		this.statedFile = statedFile;
 		this.inferredFile = inferredFile;
 	}
 
 	public void loadRelationships() throws Exception {
+		
+		LOGGER.debug("Loading Concept File: {}", conceptFile);
+		loadConceptFile(conceptFile);
 
 		LOGGER.debug("Loading Stated File: {}", statedFile);
-		statedRelationships = loadFile(statedFile, CHARACTERISTIC.STATED);
+		statedRelationships = loadRelationshipFile(statedFile, CHARACTERISTIC.STATED);
 
 		LOGGER.debug("Loading Inferred File: {}", inferredFile);
-		inferredRelationships = loadFile(inferredFile, CHARACTERISTIC.INFERRED);
+		inferredRelationships = loadRelationshipFile(inferredFile, CHARACTERISTIC.INFERRED);
 
 		LOGGER.debug("Loading complete");
 	}
 
 	
-	private Map<String, Relationship> loadFile(String filePath, CHARACTERISTIC characteristic)
+	private Map<String, Relationship> loadRelationshipFile(String filePath, CHARACTERISTIC characteristic)
 			throws Exception {
 		// Does this file exist and not as a directory?
-		File file = new File(filePath);
+		File file = getFile(filePath);
 		Map<String, Relationship> loadedRelationships = new HashMap<String, Relationship>();
-
-		if (!file.exists() || file.isDirectory()) {
-			throw new IOException("Unable to read file " + filePath);
-		}
 
 		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 			String line;
@@ -80,7 +67,7 @@ public class GraphLoader implements RF2SchemaConstants {
 				if (!isFirstLine) {
 					String[] lineItems = line.split(Relationship.FIELD_DELIMITER);
 					// Only store active relationships
-					if (lineItems[Relationship.REL_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
+					if (lineItems[REL_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
 						Relationship r = new Relationship(lineItems, characteristic);
 						loadedRelationships.put(r.getUuid(), r);
 					}
@@ -92,6 +79,30 @@ public class GraphLoader implements RF2SchemaConstants {
 			}
 		}
 		return loadedRelationships;
+	}
+	
+	private void loadConceptFile(String filePath) throws Exception {
+		File file = getFile(filePath);
+		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				String[] lineItems = line.split(Relationship.FIELD_DELIMITER);
+				// Only store active relationships
+				if (lineItems[CON_IDX_ACTIVE].equals(ACTIVE_FLAG) 
+					&& lineItems[CON_IDX_DEFINITIONSTATUSID].equals(FULLY_DEFINED_SCTID)) {
+					Concept.addFullyDefined(lineItems[CON_IDX_ID]);
+				}
+			}
+		}
+	}
+	
+	private File getFile(String filePath) throws IOException {
+		// Does this file exist and not as a directory?
+		File file = new File(filePath);
+		if (!file.exists() || file.isDirectory()) {
+			throw new IOException("Unable to read file " + filePath);
+		}
+		return file;
 	}
 
 

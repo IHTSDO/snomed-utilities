@@ -1,6 +1,10 @@
 package org.ihtsdo.snomed.util.pojo;
 
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -11,14 +15,23 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 
 	private static Map<Long, Concept> allStatedConcepts = new HashMap<Long, Concept>();
 	private static Map<Long, Concept> allInferredConcepts = new HashMap<Long, Concept>();
+	private static Map<Long, Boolean> fullyDefinedMap = new HashMap<Long, Boolean>();
 
 	private Long sctId;
-	private int maxGroupId = 0; // How many groups are defined for this source concept?
+	private boolean isFullyDefined = false;
 	Set<Concept> parents = new TreeSet<Concept>();
-	TreeSet<Relationship> attributes = new TreeSet<Relationship>();
+	Set<Concept> children = new TreeSet<Concept>();
+	List<RelationshipGroup> groups = new ArrayList<RelationshipGroup>();
+	private Long groupsHash = null;
 
 	public Concept(Long id) {
 		this.sctId = id;
+	}
+
+	public static Concept getConcept(long sctId, CHARACTERISTIC characteristic) {
+		Map<Long, Concept> allConcepts = characteristic.equals(Relationship.CHARACTERISTIC.STATED) ? allStatedConcepts
+				: allInferredConcepts;
+		return allConcepts.get(sctId);
 	}
 
 	public static Concept registerConcept(String sctIdStr, CHARACTERISTIC characteristic) {
@@ -29,6 +42,9 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		Concept concept;
 		if (!allConcepts.containsKey(sctId)) {
 			concept = new Concept(sctId);
+			if (fullyDefinedMap.containsKey(sctId) && fullyDefinedMap.get(sctId).equals(Boolean.TRUE)) {
+				concept.setFullyDefined(true);
+			}
 			allConcepts.put(sctId, concept);
 		} else {
 			concept = allConcepts.get(sctId);
@@ -36,18 +52,29 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		return concept;
 	}
 
+	private void setFullyDefined(boolean b) {
+		this.isFullyDefined = b;
+	}
 
-	public void addAttribute(Relationship relationship) {
-		assert this.equals(relationship.getSourceConcept());
+	public static void addFullyDefined(String sctIdStr) {
+		fullyDefinedMap.put(Long.valueOf(sctIdStr), Boolean.TRUE);
+	}
+
+
+	public void addAttribute(Relationship r) {
+		assert this.equals(r.getSourceConcept());
 
 		// Is this an IS A relationship? Add as a parent if so
-		if (relationship.isISA()) {
-			parents.add(relationship.getDestinationConcept());
+		if (r.isISA()) {
+			parents.add(r.getDestinationConcept());
+			// And tell that parent that it has a child
+			r.getDestinationConcept().children.add(this);
 		} else {
-			attributes.add(relationship);
-			if (relationship.getGroup() > this.maxGroupId) {
-				this.maxGroupId = relationship.getGroup();
+			// Resize groups if required
+			for (int x = groups.size(); x <= r.getGroup(); x++) {
+				groups.add(new RelationshipGroup(x));
 			}
+			groups.get(r.getGroup()).addAttribute(r);
 		}
 	}
 
@@ -69,5 +96,37 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		return sctId;
 	}
 
+	public Set<Concept> getChildren() {
+		return children;
+	}
+
+	public List<RelationshipGroup> getGroups() {
+		return groups;
+	}
+
+	/**
+	 * @return the sum of the hashes of the groupTypesUUIDs this should uniquely identify a model shape for a concept
+	 * @throws UnsupportedEncodingException
+	 */
+	public Long getGroupsShapeHash() throws UnsupportedEncodingException {
+		if (groupsHash == null) {
+			long groupsHashLong = 0L;
+			for (RelationshipGroup g : groups) {
+				groupsHashLong += g.getGroupShape().hashCode();
+			}
+			groupsHash = new Long(groupsHashLong);
+		}
+		return Math.abs(groupsHash);
+	}
+
+	public Set<Concept> getFullyDefinedChildren() {
+		Set<Concept> fullyDefinedChildren = new HashSet<Concept>();
+		for (Concept c : children) {
+			if (c.isFullyDefined) {
+				fullyDefinedChildren.add(c);
+			}
+		}
+		return fullyDefinedChildren;
+	}
 
 }

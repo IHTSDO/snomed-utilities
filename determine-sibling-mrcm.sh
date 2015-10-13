@@ -11,7 +11,7 @@ echo
 echo "Determine MRCM rules based on Sibling definition"
 echo
 default="/Users/Peter/tmp/20150731_flat"
-read -p "What directory are your snapshot relationship files in? [${default}] " sourceDir
+read -p "What directory are your snapshot concept/relationship files in? [${default}] " sourceDir
 if [ -z "${sourceDir}" ]
 then
   sourceDir=${default}
@@ -36,6 +36,6 @@ then
 fi
 set -x;
 today=`date +%Y%m%d`
-java -Xms4g -Xmx5g -enableassertions -classpath ${executable}  org.ihtsdo.snomed.util.mrcm.MrcmBuilder ${sourceDir}/sct2_StatedRelationship_Snapshot_INT_${effectiveTime}.txt ${sourceDir}/sct2_Relationship_Snapshot_INT_${effectiveTime}.txt 
+java -Xms4g -Xmx5g -enableassertions -classpath ${executable}  org.ihtsdo.snomed.util.mrcm.MrcmBuilder ${sourceDir}/sct2_Concept_Snapshot_INT_${effectiveTime}.txt ${sourceDir}/sct2_StatedRelationship_Snapshot_INT_${effectiveTime}.txt ${sourceDir}/sct2_Relationship_Snapshot_INT_${effectiveTime}.txt 
 
 

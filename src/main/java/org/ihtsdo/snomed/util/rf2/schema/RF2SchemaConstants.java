@@ -11,6 +11,7 @@ public interface RF2SchemaConstants {
 	public static final String INACTIVE_FLAG = "0";
 	public static final String HEADER_ROW = "id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId\r\n";
 
+	// Relationship columns
 	public static final int REL_IDX_ID = 0;
 	public static final int REL_IDX_EFFECTIVETIME = 1;
 	public static final int REL_IDX_ACTIVE = 2;
@@ -22,6 +23,16 @@ public interface RF2SchemaConstants {
 	public static final int REL_IDX_CHARACTERISTICTYPEID = 8;
 	public static final int REL_IDX_MODIFIERID = 9;
 	public static final int REL_MAX_COLUMN = 9;
+
+	// Concept columns
+	// id effectiveTime active moduleId definitionStatusId
+	public static final int CON_IDX_ID = 0;
+	public static final int CON_IDX_EFFECTIVETIME = 1;
+	public static final int CON_IDX_ACTIVE = 2;
+	public static final int CON_IDX_MODULID = 3;
+	public static final int CON_IDX_DEFINITIONSTATUSID = 4;
+
+	public static final String FULLY_DEFINED_SCTID = "900000000000073002";
 
 	public static enum CHARACTERISTIC {
 		STATED, INFERRED, ADDITIONAL
