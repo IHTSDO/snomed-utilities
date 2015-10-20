@@ -29,7 +29,6 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 	// Was originally splitting the string in the constructor, but expensive to create object
 	// if active flag is zero, so check this before passing in
 	public Relationship(String[] lineValues, CHARACTERISTIC characteristic) throws Exception {
-		//lineValues = lineValues;
 		typeId = new Long(lineValues[REL_IDX_TYPEID]);
 		group = Integer.parseInt(lineValues[REL_IDX_RELATIONSHIPGROUP]);
 		uuid = type5UuidFactory.get(
@@ -127,6 +126,10 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 
 	public boolean isGroup(int group) {
 		return this.group == group;
+	}
+
+	public Concept getType() {
+		return Concept.getConcept(this.typeId, CHARACTERISTIC.INFERRED);
 	}
 
 }

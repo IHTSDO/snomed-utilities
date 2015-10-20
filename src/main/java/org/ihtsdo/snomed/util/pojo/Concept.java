@@ -129,4 +129,20 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		return fullyDefinedChildren;
 	}
 
+	public Concept getAncestor(int level) {
+		// How far up the ancestry hierarchy are we working?
+		Concept thisAncestor = this;
+		while (level > 0) {
+			level--;
+			// Ensure that it only has one parent
+			assert (thisAncestor.parents.size() == 1);
+			thisAncestor = thisAncestor.parents.toArray(new Concept[] {})[0];
+		}
+		return thisAncestor;
+	}
+
+	public String toString() {
+		return "sctid: " + sctId;
+	}
+
 }
