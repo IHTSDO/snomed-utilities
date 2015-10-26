@@ -13,7 +13,6 @@ public class RelationshipGroup {
 
 	private static Type5UuidFactory type5UuidFactory;
 	private static String EMTPTY_SHAPE = "Empty Shape";
-	private static final char BINARY_YES = '1';
 	private static final int IMMEDIATE_PARENT = 1;
 	static {
 		try {
@@ -30,7 +29,7 @@ public class RelationshipGroup {
 	private Set<Relationship> attributes = new TreeSet<Relationship>();
 	private String groupTypesUUID = null;
 	private int number;
-	private Integer morePopularShapeBinaryPattern = null;
+	private GroupShape mostPopularShape;
 
 	public void addAttribute(Relationship r) {
 		attributes.add(r);
@@ -67,14 +66,6 @@ public class RelationshipGroup {
 			result = EMTPTY_SHAPE;
 		}
 		return result;
-	}
-
-	public Integer getMorePopularShapeBinaryPattern() {
-		return morePopularShapeBinaryPattern;
-	}
-
-	public void setMorePopularShapeBinaryPattern(Integer morePopularShapeBinaryPattern) {
-		this.morePopularShapeBinaryPattern = morePopularShapeBinaryPattern;
 	}
 
 	public int size() {
@@ -124,6 +115,14 @@ public class RelationshipGroup {
 			result = EMTPTY_SHAPE;
 		}
 		return result;
+	}
+
+	public GroupShape getMostPopularShape() {
+		return mostPopularShape;
+	}
+
+	public void setMostPopularShape(GroupShape mostPopularShape) {
+		this.mostPopularShape = mostPopularShape;
 	}
 
 }

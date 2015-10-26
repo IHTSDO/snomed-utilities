@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.ihtsdo.snomed.util.pojo.Concept;
+import org.ihtsdo.snomed.util.pojo.GroupShape;
 import org.ihtsdo.snomed.util.pojo.Relationship;
 import org.ihtsdo.snomed.util.pojo.RelationshipGroup;
 import org.ihtsdo.snomed.util.rf2.GraphLoader;
@@ -83,7 +84,8 @@ public class MrcmBuilder {
 		for (Concept sibling : definedSiblings) {
 			List<RelationshipGroup> groups = sibling.getGroups();
 			for (RelationshipGroup g : groups) {
-				String preferredShape = g.getGroupShape();
+				String preferredShapeId = g.getGroupShape();
+				Set<Integer> preferredAbstractCombination = null;
 				// Loop through all the combinations of attributes to express as type ancestors
 				Set<Set<Integer>> allCombinations = CollectionUtils.getIndexCombinations(g.size());
 				for (Set<Integer> thisCombination : allCombinations) {
@@ -96,13 +98,16 @@ public class MrcmBuilder {
 					if (shapePopularity.containsKey(groupAbstractShape)) {
 						LOGGER.info("Abstract Group Shape better for {}: {} (was {})", sibling.getSctId(), groupAbstractShape,
 								g.getGroupShape());
-						preferredShape = groupAbstractShape;
+						preferredShapeId = groupAbstractShape;
+						preferredAbstractCombination = thisCombination;
 					}
 				}
 				// Also put the original shape (which might remain zero popular) so we can compare it later
 				shapePopularity.putIfAbsent(g.getGroupShape(), new AtomicInteger(0));
-				shapePopularity.putIfAbsent(preferredShape, new AtomicInteger(0));
-				shapePopularity.get(preferredShape).incrementAndGet();
+				shapePopularity.putIfAbsent(preferredShapeId, new AtomicInteger(0));
+				int newPopularity = shapePopularity.get(preferredShapeId).incrementAndGet();
+				GroupShape preferredShape = new GroupShape(preferredShapeId, null, preferredAbstractCombination, newPopularity);
+				g.setMostPopularShape(preferredShape);
 			}
 		}
 		
