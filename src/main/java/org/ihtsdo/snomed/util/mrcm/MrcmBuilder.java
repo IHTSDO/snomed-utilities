@@ -39,10 +39,11 @@ public class MrcmBuilder {
 		g.loadRelationships();
 		reportMemory();
 
-		long conceptToExamine = 362958002L;
-		// long conceptToExamine = 285579008L;
-		// CHARACTERISTIC hierarchyToExamine = CHARACTERISTIC.INFERRED;
-		CHARACTERISTIC hierarchyToExamine = CHARACTERISTIC.STATED;
+		// long conceptToExamine = 128927009L; // Procedure by Method
+		long conceptToExamine = 362958002L; // Procedure by Site
+		// long conceptToExamine = 285579008L; //Taking swab from body site
+		CHARACTERISTIC hierarchyToExamine = CHARACTERISTIC.INFERRED;
+		// CHARACTERISTIC hierarchyToExamine = CHARACTERISTIC.STATED;
 		LOGGER.info("Examining Siblings of {} in the {} hierarchy to Determine MRCM Rules...", conceptToExamine, hierarchyToExamine);
 		// Lets start with children of "Procedure by site"
 		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
