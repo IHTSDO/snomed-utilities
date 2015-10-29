@@ -1,6 +1,7 @@
 package org.ihtsdo.snomed.util.mrcm;
 
 import java.io.UnsupportedEncodingException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,35 +23,9 @@ import com.google.common.collect.Sets;
 
 public class MrcmBuilder {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
+	private final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
 
-	public static int mb = 1024 * 1024;
-	private static void doHelp() {
-		LOGGER.info("Usage: <concept file location> <stated relationship file location> <inferred realtionship file location>");
-		System.exit(-1);
-	}
-
-	public static void main(String[] args) throws Exception {
-		if (args.length < 2) {
-			doHelp();
-		}
-		reportMemory();
-		GraphLoader g = new GraphLoader(args[0], args[1], args[2]);
-		g.loadRelationships();
-		reportMemory();
-
-		// long conceptToExamine = 128927009L; // Procedure by Method
-		long conceptToExamine = 362958002L; // Procedure by Site
-		// long conceptToExamine = 285579008L; //Taking swab from body site
-		CHARACTERISTIC hierarchyToExamine = CHARACTERISTIC.INFERRED;
-		// CHARACTERISTIC hierarchyToExamine = CHARACTERISTIC.STATED;
-		LOGGER.info("Examining Siblings of {} in the {} hierarchy to Determine MRCM Rules...", conceptToExamine, hierarchyToExamine);
-		// Lets start with children of "Procedure by site"
-		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
-		determineMRCM(c);
-	}
-
-	private static void determineMRCM(Concept c) throws UnsupportedEncodingException {
+	public void determineMRCM(Concept c) throws UnsupportedEncodingException {
 		Set<Concept> siblings = c.getChildren();
 		Set<Concept> definedSiblings = c.getFullyDefinedChildren();
 		LOGGER.info("Examining {} fully defined out of {} children of {}", definedSiblings.size(), siblings.size(), c.getSctId());
@@ -142,7 +117,7 @@ public class MrcmBuilder {
 
 	}
 
-	private static void findPartialGroupAbstractShapes(Set<Concept> definedSiblings, ConcurrentMap<String, AtomicInteger> shapePopularity)
+	private void findPartialGroupAbstractShapes(Set<Concept> definedSiblings, ConcurrentMap<String, AtomicInteger> shapePopularity)
 			throws UnsupportedEncodingException {
 		for (Concept sibling : definedSiblings) {
 			List<RelationshipGroup> groups = sibling.getGroups();
@@ -176,10 +151,10 @@ public class MrcmBuilder {
 		}
 	}
 
-	private static void reportMemory() {
-		Runtime runtime = Runtime.getRuntime();
-		LOGGER.info("Used Memory: {} Mb", (runtime.totalMemory() - runtime.freeMemory()) / mb);
-		LOGGER.info("Free Memory: {} Mb", runtime.freeMemory() / mb);
+	public void determineMRCM(String sctid, CHARACTERISTIC hierarchyToExamine) throws UnsupportedEncodingException {
+		Long conceptToExamine = new Long(sctid);
+		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
+		determineMRCM(c);
 	}
 
 }

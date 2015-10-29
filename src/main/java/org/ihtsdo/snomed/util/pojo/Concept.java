@@ -2,6 +2,7 @@ package org.ihtsdo.snomed.util.pojo;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,8 +53,18 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		return concept;
 	}
 
+	public static Collection<Concept> getAllConcepts(CHARACTERISTIC characteristic) {
+		Map<Long, Concept> allConcepts = characteristic.equals(Relationship.CHARACTERISTIC.STATED) ? allStatedConcepts
+				: allInferredConcepts;
+		return allConcepts.values();
+	}
+
 	private void setFullyDefined(boolean b) {
 		this.isFullyDefined = b;
+	}
+
+	public boolean isFullyDefined() {
+		return this.isFullyDefined;
 	}
 
 	public static void addFullyDefined(String sctIdStr) {
@@ -100,6 +111,10 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		return children;
 	}
 
+	public Set<Concept> getParents() {
+		return parents;
+	}
+
 	public List<RelationshipGroup> getGroups() {
 		return groups;
 	}
@@ -143,6 +158,14 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 
 	public String toString() {
 		return "sctid: " + sctId;
+	}
+
+	public Collection<Relationship> getAllAttributes() {
+		Set<Relationship> allAttributes = new HashSet<Relationship>();
+		for (RelationshipGroup thisGroup : groups) {
+			allAttributes.addAll(thisGroup.getAttributes());
+		}
+		return allAttributes;
 	}
 
 }

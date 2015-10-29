@@ -125,4 +125,8 @@ public class RelationshipGroup {
 		this.mostPopularShape = mostPopularShape;
 	}
 
+	public Set<Relationship> getAttributes() {
+		return attributes;
+	}
+
 }
