@@ -14,16 +14,16 @@ public class MrcmInteractiveMenu {
 	public static int mb = 1024 * 1024;
 
 	private static void doHelp() {
-		LOGGER.info("Usage: <concept file location> <stated relationship file location> <inferred realtionship file location>");
+		LOGGER.info("Usage: <concept file location> <stated relationship file location> <inferred realtionship file location> <description file location>");
 		System.exit(-1);
 	}
 
 	public static void main(String[] args) throws Exception {
-		if (args.length < 2) {
+		if (args.length < 3) {
 			doHelp();
 		}
 		reportMemory();
-		GraphLoader g = new GraphLoader(args[0], args[1], args[2]);
+		GraphLoader g = new GraphLoader(args[0], args[1], args[2], args[3]);
 		g.loadRelationships();
 		reportMemory();
 
@@ -68,7 +68,6 @@ public class MrcmInteractiveMenu {
 		print("\n");
 		print("     Menu    ");
 		print("--------------");
-		print("");
 		print("e - check for equivalencies");
 		print("m - get mrcm for children of concept");
 		print("q - quit");

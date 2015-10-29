@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.ihtsdo.snomed.util.pojo.Concept;
+import org.ihtsdo.snomed.util.pojo.Description;
 import org.ihtsdo.snomed.util.pojo.Relationship;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
 import org.slf4j.Logger;
@@ -27,15 +28,17 @@ public class GraphLoader implements RF2SchemaConstants {
 	private final String conceptFile;
 	private final String statedFile;
 	private final String inferredFile;
+	private final String descriptionFile;
 
 
 	private Map<String, Relationship> statedRelationships;
 	private Map<String, Relationship> inferredRelationships;
 
-	public GraphLoader(String conceptFile, String statedFile, String inferredFile) {
+	public GraphLoader(String conceptFile, String statedFile, String inferredFile, String descriptionFile) {
 		this.conceptFile = conceptFile;
 		this.statedFile = statedFile;
 		this.inferredFile = inferredFile;
+		this.descriptionFile = descriptionFile;
 	}
 
 	public void loadRelationships() throws Exception {
@@ -49,10 +52,13 @@ public class GraphLoader implements RF2SchemaConstants {
 		LOGGER.debug("Loading Inferred File: {}", inferredFile);
 		inferredRelationships = loadRelationshipFile(inferredFile, CHARACTERISTIC.INFERRED);
 
+		LOGGER.debug("Loading Description File: {}", descriptionFile);
+		loadDescriptionFile(descriptionFile);
+
 		LOGGER.debug("Loading complete");
 	}
 
-	
+
 	private Map<String, Relationship> loadRelationshipFile(String filePath, CHARACTERISTIC characteristic)
 			throws Exception {
 		// Does this file exist and not as a directory?
@@ -65,7 +71,7 @@ public class GraphLoader implements RF2SchemaConstants {
 			while ((line = br.readLine()) != null) {
 
 				if (!isFirstLine) {
-					String[] lineItems = line.split(Relationship.FIELD_DELIMITER);
+					String[] lineItems = line.split(FIELD_DELIMITER);
 					// Only store active relationships
 					if (lineItems[REL_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
 						Relationship r = new Relationship(lineItems, characteristic);
@@ -86,7 +92,7 @@ public class GraphLoader implements RF2SchemaConstants {
 		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 			String line;
 			while ((line = br.readLine()) != null) {
-				String[] lineItems = line.split(Relationship.FIELD_DELIMITER);
+				String[] lineItems = line.split(FIELD_DELIMITER);
 				// Only store active relationships
 				if (lineItems[CON_IDX_ACTIVE].equals(ACTIVE_FLAG) 
 					&& lineItems[CON_IDX_DEFINITIONSTATUSID].equals(FULLY_DEFINED_SCTID)) {
@@ -96,6 +102,20 @@ public class GraphLoader implements RF2SchemaConstants {
 		}
 	}
 	
+	private void loadDescriptionFile(String filePath) throws IOException {
+		File file = getFile(filePath);
+		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				String[] lineItems = line.split(FIELD_DELIMITER);
+				// Only store active relationships
+				if (lineItems[DES_IDX_ACTIVE].equals(ACTIVE_FLAG) && lineItems[DES_IDX_TYPEID].equals(FULLY_SPECIFIED_NAME)) {
+					new Description(lineItems);
+				}
+			}
+		}
+	}
+
 	private File getFile(String filePath) throws IOException {
 		// Does this file exist and not as a directory?
 		File file = new File(filePath);

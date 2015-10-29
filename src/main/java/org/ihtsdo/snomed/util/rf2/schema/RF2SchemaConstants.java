@@ -32,7 +32,20 @@ public interface RF2SchemaConstants {
 	public static final int CON_IDX_MODULID = 3;
 	public static final int CON_IDX_DEFINITIONSTATUSID = 4;
 
+	// Description columns
+	// id effectiveTime active moduleId conceptId languageCode typeId term caseSignificanceId
+	public static final int DES_IDX_ID = 0;
+	public static final int DES_IDX_EFFECTIVETIME = 1;
+	public static final int DES_IDX_ACTIVE = 2;
+	public static final int DES_IDX_MODULID = 3;
+	public static final int DES_IDX_CONCEPTID = 4;
+	public static final int DES_IDX_LANGUAGECODE = 5;
+	public static final int DES_IDX_TYPEID = 6;
+	public static final int DES_IDX_TERM = 7;
+	public static final int DES_IDX_CASESIGNIFICANCEID = 8;
+
 	public static final String FULLY_DEFINED_SCTID = "900000000000073002";
+	public static final String FULLY_SPECIFIED_NAME = "900000000000003001";
 
 	public static enum CHARACTERISTIC {
 		STATED, INFERRED, ADDITIONAL

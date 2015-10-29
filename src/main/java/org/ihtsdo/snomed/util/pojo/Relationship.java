@@ -1,11 +1,7 @@
 package org.ihtsdo.snomed.util.pojo;
 
-import java.util.List;
-
 import org.ihtsdo.snomed.util.Type5UuidFactory;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Relationship implements Comparable<Relationship>, RF2SchemaConstants {
 
