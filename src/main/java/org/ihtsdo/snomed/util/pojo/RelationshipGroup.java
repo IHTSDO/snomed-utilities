@@ -129,4 +129,19 @@ public class RelationshipGroup {
 		return attributes;
 	}
 
+	public String prettyPrint() {
+		String str = "     [ ";
+		boolean isFirst = true;
+		for (Relationship rel : attributes) {
+			if (!isFirst) {
+				str += ", ";
+			} else {
+				isFirst = false;
+			}
+			str += Description.getFormattedConcept(rel.getTypeId());
+		}
+		str += " ]";
+		return str;
+	}
+
 }

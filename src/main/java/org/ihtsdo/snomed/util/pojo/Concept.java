@@ -24,6 +24,8 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	Set<Concept> children = new TreeSet<Concept>();
 	List<RelationshipGroup> groups = new ArrayList<RelationshipGroup>();
 	private Long groupsHash = null;
+	private static final int NOT_SET = -1;
+	private int depth = NOT_SET;
 
 	public Concept(Long id) {
 		this.sctId = id;
@@ -166,6 +168,32 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 			allAttributes.addAll(thisGroup.getAttributes());
 		}
 		return allAttributes;
+	}
+
+	public int getDepth() {
+		return depth;
+	}
+
+	public void setDepth(int depth) {
+		// We'll maintain the shortest possible path, so don't allow
+		// depth to increase
+		if (this.depth == NOT_SET || depth < this.depth) {
+			this.depth = depth;
+		}
+	}
+
+	private void populateAllAncestors(Set<Concept> ancestors) {
+		for (Concept thisParent : parents) {
+			ancestors.add(thisParent);
+			thisParent.populateAllAncestors(ancestors);
+		}
+	}
+
+	public Set<Concept> getAllAncestorsAndSelf() {
+		Set<Concept> allAncestorsAndSelf = new HashSet<Concept>();
+		allAncestorsAndSelf.add(this);
+		this.populateAllAncestors(allAncestorsAndSelf);
+		return allAncestorsAndSelf;
 	}
 
 }

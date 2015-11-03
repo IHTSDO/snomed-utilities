@@ -30,6 +30,8 @@ public class GraphLoader implements RF2SchemaConstants {
 	private final String inferredFile;
 	private final String descriptionFile;
 
+	private final Long SNOMED_ROOT_CONCEPT = 138875005L;
+
 
 	private Map<String, Relationship> statedRelationships;
 	private Map<String, Relationship> inferredRelationships;
@@ -55,9 +57,23 @@ public class GraphLoader implements RF2SchemaConstants {
 		LOGGER.debug("Loading Description File: {}", descriptionFile);
 		loadDescriptionFile(descriptionFile);
 
+		LOGGER.debug("Populating inferred hierarchy depth");
+		Concept hierarchyRoot = Concept.getConcept(SNOMED_ROOT_CONCEPT, CHARACTERISTIC.INFERRED);
+		populateHierarchyDepth(hierarchyRoot, 0);
+
 		LOGGER.debug("Loading complete");
 	}
 
+
+	/**
+	 * Recurse hiearchy and set shortest path depth for all concepts
+	 */
+	private void populateHierarchyDepth(Concept startingPoint, int currentDepth) {
+		startingPoint.setDepth(currentDepth);
+		for (Concept child : startingPoint.getChildren()) {
+			populateHierarchyDepth(child, currentDepth + 1);
+		}
+	}
 
 	private Map<String, Relationship> loadRelationshipFile(String filePath, CHARACTERISTIC characteristic)
 			throws Exception {

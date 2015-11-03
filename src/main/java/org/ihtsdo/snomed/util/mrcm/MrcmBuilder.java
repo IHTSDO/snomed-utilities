@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.ihtsdo.snomed.util.pojo.Concept;
+import org.ihtsdo.snomed.util.pojo.Description;
 import org.ihtsdo.snomed.util.pojo.GroupShape;
 import org.ihtsdo.snomed.util.pojo.Relationship;
 import org.ihtsdo.snomed.util.pojo.RelationshipGroup;
@@ -23,12 +24,15 @@ import com.google.common.collect.Sets;
 
 public class MrcmBuilder {
 
-	private final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
+	private static String INDENT_0 = "";
+	private static String INDENT_1 = "\t";
+
+	private final Logger logger = LoggerFactory.getLogger(GraphLoader.class);
 
 	public void determineMRCM(Concept c) throws UnsupportedEncodingException {
 		Set<Concept> siblings = c.getChildren();
 		Set<Concept> definedSiblings = c.getFullyDefinedChildren();
-		LOGGER.info("Examining {} fully defined out of {} children of {}", definedSiblings.size(), siblings.size(), c.getSctId());
+		logger.info("Examining {} fully defined out of {} children of {}", definedSiblings.size(), siblings.size(), c.getSctId());
 
 		final ConcurrentMap<String, AtomicInteger> shapePopularity = new ConcurrentHashMap<String, AtomicInteger>();
 		final ConcurrentMap<String, AtomicInteger> groupsHashPopularity = new ConcurrentHashMap<String, AtomicInteger>();
@@ -37,19 +41,19 @@ public class MrcmBuilder {
 			List<RelationshipGroup> groups = sibling.getGroups();
 			for (RelationshipGroup g : groups) {
 				String groupShape = g.getGroupShape();
-				LOGGER.info("{}:{} - {} ", sibling.getSctId(), g.getNumber(), groupShape);
+				logger.info("{}:{} - {} ", sibling.getSctId(), g.getNumber(), groupShape);
 				shapePopularity.putIfAbsent(groupShape, new AtomicInteger(0));
 				shapePopularity.get(groupShape).incrementAndGet();
 			}
 			String groupsShapeHash = sibling.getGroupsShapeHash().toString();
-			LOGGER.info("  Groups Shape: {}", groupsShapeHash);
+			logger.info("  Groups Shape: {}", groupsShapeHash);
 			groupsHashPopularity.putIfAbsent(groupsShapeHash, new AtomicInteger(0));
 			groupsHashPopularity.get(groupsShapeHash).incrementAndGet();
 		}
-		LOGGER.info("Shape Popularity:");
+		logger.info("Shape Popularity:");
 		CollectionUtils.printSortedMap(shapePopularity);
 		
-		LOGGER.info("Groups Hash Popularity:");
+		logger.info("Groups Hash Popularity:");
 		CollectionUtils.printSortedMap(groupsHashPopularity);
 
 		// Now loop through groups again and see if we can find a better shape by working
@@ -72,7 +76,7 @@ public class MrcmBuilder {
 					String groupAbstractShape = g.getGroupAbstractShape(thisCombination);
 					// If ANY sibling already uses the more abstract model, then that's preferable to have in common
 					if (shapePopularity.containsKey(groupAbstractShape)) {
-						LOGGER.info("Abstract Group Shape better for {}: {} (was {})", sibling.getSctId(), groupAbstractShape,
+						logger.info("Abstract Group Shape better for {}: {} (was {})", sibling.getSctId(), groupAbstractShape,
 								g.getGroupShape());
 						preferredShapeId = groupAbstractShape;
 						preferredAbstractCombination = thisCombination;
@@ -87,7 +91,7 @@ public class MrcmBuilder {
 			}
 		}
 		
-		LOGGER.info("Shape Popularity after considering Abstract Shape:");
+		logger.info("Shape Popularity after considering Abstract Shape:");
 		CollectionUtils.printSortedMap(shapePopularity);
 
 		// Now loop through groups again and see if we can find a more popular shape by working
@@ -105,7 +109,7 @@ public class MrcmBuilder {
 					String groupPartialShape = g.getGroupPartialShape(thisCombination);
 					// If ANY sibling already uses the more abstract model, then that's preferable to have in common
 					if (shapePopularity.containsKey(groupPartialShape) && shapePopularity.get(groupPartialShape).get() > shapePopularity.get(g.getGroupShape()).get()) {
-						LOGGER.info("Partial Group Shape more popular for {}: {} (was {})", sibling.getSctId(), groupPartialShape,
+						logger.info("Partial Group Shape more popular for {}: {} (was {})", sibling.getSctId(), groupPartialShape,
 								g.getGroupShape());
 					}
 				}
@@ -142,7 +146,7 @@ public class MrcmBuilder {
 						// If ANY sibling already uses the more abstract model, then that's preferable to have in common
 						if (shapePopularity.containsKey(groupPartialAbstractShape)
 								&& shapePopularity.get(groupPartialAbstractShape).get() > shapePopularity.get(g.getGroupShape()).get()) {
-							LOGGER.info("Partial Group Abstract Shape more popular for {}: {} (was {})", sibling.getSctId(),
+							logger.info("Partial Group Abstract Shape more popular for {}: {} (was {})", sibling.getSctId(),
 									groupPartialAbstractShape, g.getGroupShape());
 						}
 					}
@@ -155,6 +159,100 @@ public class MrcmBuilder {
 		Long conceptToExamine = new Long(sctid);
 		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
 		determineMRCM(c);
+	}
+
+	public void displayShape(String sctid, CHARACTERISTIC hierarchyToExamine) {
+		Long conceptToExamine = new Long(sctid);
+		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
+		prettyPrint(c, INDENT_0);
+		for (Concept child : c.getFullyDefinedChildren()) {
+			prettyPrint(child, INDENT_1);
+		}
+
+	}
+
+	private void prettyPrint(Concept c, String indent) {
+		print("", indent);
+		print(Description.getFormattedConcept(c.getSctId()), indent);
+		print("-----------------------------------------------------", indent);
+		for (Concept parent : c.getParents()) {
+			print("  IS A " + Description.getFormattedConcept(parent.getSctId()), indent);
+		}
+		for (RelationshipGroup group : c.getGroups()) {
+			if (group.getAttributes().size() > 0) {
+				print(group.prettyPrint(), indent);
+			}
+		}
+	}
+
+	private void print(String msg, String indent) {
+		System.out.println(indent + msg);
+	}
+
+	private void printn(String msg, String indent) {
+		System.out.print(indent + msg);
+	}
+
+	public void determineValueRange(String attributeSCTID, String hierarchySCTID, CHARACTERISTIC hierarchyToExamine) {
+		Set<Concept> allDestinations = new HashSet<Concept>();
+		Concept hierarchyStart = Concept.getConcept(new Long(hierarchySCTID), hierarchyToExamine);
+		Concept targetRelationshipType = Concept.getConcept(new Long(attributeSCTID), hierarchyToExamine);
+		populateAllDestinations(allDestinations, hierarchyStart, targetRelationshipType);
+		logger.info("Collected {} possible values for attribute {} in hierarchy {}", allDestinations.size(),
+				Description.getFormattedConcept(targetRelationshipType.getSctId()),
+				Description.getFormattedConcept(hierarchyStart.getSctId()));
+
+		for (Concept thisDestination : allDestinations) {
+			logger.info("\t{}", Description.getFormattedConcept(thisDestination.getSctId()));
+		}
+
+		Concept commonAncestor = findCommonAncestor(allDestinations);
+		if (commonAncestor != null) {
+			logger.info("Attribute values had lowest common ancestor: {}", Description.getFormattedConcept(commonAncestor.getSctId()));
+		} else {
+			logger.warn("Unable to find common ancestor for attribute values");
+		}
+	}
+
+	private Concept findCommonAncestor(Set<Concept> concepts) {
+		// We must have at least two concepts to search for common ancestor
+		if (concepts.size() < 2) {
+			return null;
+		}
+		Set<Concept> allCommonAncestors = null; // We'll remove not-common ancestors from first result set
+		for (Concept thisConcept : concepts) {
+			if (allCommonAncestors == null) {
+				allCommonAncestors = thisConcept.getAllAncestorsAndSelf();
+			} else {
+				allCommonAncestors.retainAll(thisConcept.getAllAncestorsAndSelf());
+			}
+			if (allCommonAncestors.size() == 0) {
+				return null;
+			}
+		}
+
+		// Now find the common ancestor that has the greatest depth
+		Concept deepestAncestor = null;
+		for (Concept thisCommonAncestor : allCommonAncestors) {
+			if (deepestAncestor == null || thisCommonAncestor.getDepth() > deepestAncestor.getDepth()) {
+				deepestAncestor = thisCommonAncestor;
+			}
+		}
+		return deepestAncestor;
+	}
+
+	private void populateAllDestinations(Set<Concept> allDestinations, Concept parent, Concept targetRelationshipType) {
+		// Look through this concept to see if it has any attributes with the target attribute type
+		// and populate the destination in the supplied set if so. Recurse through all children
+		for (Relationship thisRelationship : parent.getAllAttributes()) {
+			if (thisRelationship.getTypeId().equals(targetRelationshipType.getSctId())) {
+				allDestinations.add(thisRelationship.getDestinationConcept());
+			}
+		}
+
+		for (Concept thisChild : parent.getChildren()) {
+			populateAllDestinations(allDestinations, thisChild, targetRelationshipType);
+		}
 	}
 
 }

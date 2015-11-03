@@ -53,6 +53,18 @@ public class MrcmInteractiveMenu {
 						String sctid = in.nextLine().trim();
 						new MrcmBuilder().determineMRCM(sctid, CHARACTERISTIC.INFERRED);
 						break;
+				case "r":
+						printn("Enter Attribute Type SCTID to process: ");
+						String attributeSCTID = in.nextLine().trim();
+						printn("Found in which hierarchy? ");
+						String hierarchySCTID = in.nextLine().trim();
+						new MrcmBuilder().determineValueRange(attributeSCTID, hierarchySCTID, CHARACTERISTIC.INFERRED);
+						break;
+					case "s":
+						printn("Enter SCTID to process: ");
+						sctid = in.nextLine().trim();
+						new MrcmBuilder().displayShape(sctid, CHARACTERISTIC.INFERRED);
+						break;
 					case "q":
 						System.exit(0);
 						break;
@@ -70,6 +82,8 @@ public class MrcmInteractiveMenu {
 		print("--------------");
 		print("e - check for equivalencies");
 		print("m - get mrcm for children of concept");
+		print("r - range of attribute values");
+		print("s - shape of concept and defined children");
 		print("q - quit");
 		printn("Choose a function: ");
 
