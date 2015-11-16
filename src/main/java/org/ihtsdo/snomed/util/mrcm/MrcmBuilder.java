@@ -1,9 +1,12 @@
 package org.ihtsdo.snomed.util.mrcm;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -175,6 +178,7 @@ public class MrcmBuilder {
 		print("", indent);
 		print(Description.getFormattedConcept(c.getSctId()), indent);
 		print("-----------------------------------------------------", indent);
+
 		for (Concept parent : c.getParents()) {
 			print("  IS A " + Description.getFormattedConcept(parent.getSctId()), indent);
 		}
@@ -193,24 +197,27 @@ public class MrcmBuilder {
 		System.out.print(indent + msg);
 	}
 
-	public void determineValueRange(String attributeSCTID, String hierarchySCTID, CHARACTERISTIC hierarchyToExamine) {
+	public void determineValueRange(String attributeSCTID, String hierarchySCTID, CHARACTERISTIC hierarchyToExamine, boolean verbose) {
 		Set<Concept> allDestinations = new HashSet<Concept>();
 		Concept hierarchyStart = Concept.getConcept(new Long(hierarchySCTID), hierarchyToExamine);
 		Concept targetRelationshipType = Concept.getConcept(new Long(attributeSCTID), hierarchyToExamine);
 		populateAllDestinations(allDestinations, hierarchyStart, targetRelationshipType);
-		logger.info("Collected {} possible values for attribute {} in hierarchy {}", allDestinations.size(),
-				Description.getFormattedConcept(targetRelationshipType.getSctId()),
-				Description.getFormattedConcept(hierarchyStart.getSctId()));
+		if (verbose) {
+			logger.info("Collected {} possible values for attribute {} in hierarchy {}", allDestinations.size(),
+					Description.getFormattedConcept(targetRelationshipType.getSctId()),
+					Description.getFormattedConcept(hierarchyStart.getSctId()));
 
-		for (Concept thisDestination : allDestinations) {
-			logger.info("\t{}", Description.getFormattedConcept(thisDestination.getSctId()));
+			for (Concept thisDestination : allDestinations) {
+				logger.info("\t{}", Description.getFormattedConcept(thisDestination.getSctId()));
+			}
 		}
 
 		Concept commonAncestor = findCommonAncestor(allDestinations);
 		if (commonAncestor != null) {
-			logger.info("Attribute values had lowest common ancestor: {}", Description.getFormattedConcept(commonAncestor.getSctId()));
+			logger.info("{} values LCA: {}", Description.getFormattedConcept(targetRelationshipType.getSctId()),
+					Description.getFormattedConcept(commonAncestor.getSctId()));
 		} else {
-			logger.warn("Unable to find common ancestor for attribute values");
+			logger.warn("Unable to find lca for values of {}", Description.getFormattedConcept(targetRelationshipType.getSctId()));
 		}
 	}
 
@@ -252,6 +259,28 @@ public class MrcmBuilder {
 
 		for (Concept thisChild : parent.getChildren()) {
 			populateAllDestinations(allDestinations, thisChild, targetRelationshipType);
+		}
+	}
+
+	public void determineAllLCAs(String hierarchySCTID, CHARACTERISTIC hierarchyToExamine) {
+		// Collect all relationship types for this concept down
+		Concept hierarchyStart = Concept.getConcept(new Long(hierarchySCTID), hierarchyToExamine);
+		Set<Concept> allAttributeTypes = new TreeSet<Concept>();
+		populateAllAttributeTypes(hierarchyStart, allAttributeTypes);
+
+		// Now work through these attributes and report just the LCA for the attribute range
+		for (Concept thisAttributeType : allAttributeTypes) {
+			determineValueRange(thisAttributeType.getSctId().toString(), hierarchySCTID, hierarchyToExamine, false);
+		}
+	}
+
+	private void populateAllAttributeTypes(Concept parent, Set<Concept> allAttributeTypes) {
+		for (Relationship thisRelationship : parent.getAllAttributes()) {
+			allAttributeTypes.add(thisRelationship.getType());
+		}
+
+		for (Concept thisChild : parent.getChildren()) {
+			populateAllAttributeTypes(thisChild, allAttributeTypes);
 		}
 	}
 
