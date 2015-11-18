@@ -2,6 +2,7 @@ package org.ihtsdo.snomed.util.pojo;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -27,7 +28,7 @@ public class RelationshipGroup {
 	}
 
 	private Set<Relationship> attributes = new TreeSet<Relationship>();
-	private String groupTypesUUID = null;
+	private GroupShape basicGroupShape = null;
 	private int number;
 	private GroupShape mostPopularShape;
 
@@ -41,11 +42,13 @@ public class RelationshipGroup {
 
 	// Returns a hash of the relationship group's types this will hopefully
 	// uniquely identify the shape of a group
-	public String getGroupShape() throws UnsupportedEncodingException {
-		if (groupTypesUUID == null) {
-			groupTypesUUID = getGroupAbstractShape(new TreeSet<Integer>()); // default - no type made more general
+	public GroupShape getGroupBasicShape() throws UnsupportedEncodingException {
+		if (basicGroupShape == null) {
+			String groupTypesUUID = getGroupAbstractShape(new TreeSet<Integer>()); // default - no type made more general
+			basicGroupShape = GroupShape.get(groupTypesUUID);
+			basicGroupShape.setShapeStructure(getAttributeTypes());
 		} 
-		return groupTypesUUID;
+		return basicGroupShape;
 	}
 	
 	public String getGroupAbstractShape(Set<Integer> indexCombination) throws UnsupportedEncodingException {
@@ -127,6 +130,14 @@ public class RelationshipGroup {
 
 	public Set<Relationship> getAttributes() {
 		return attributes;
+	}
+
+	public Set<Concept> getAttributeTypes() {
+		Set<Concept> attributeTypes = new HashSet<Concept>();
+		for (Relationship thisAttribute : attributes) {
+			attributeTypes.add(thisAttribute.getType());
+		}
+		return attributeTypes;
 	}
 
 	public String prettyPrint() {

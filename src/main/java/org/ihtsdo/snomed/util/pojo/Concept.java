@@ -23,7 +23,7 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	Set<Concept> parents = new TreeSet<Concept>();
 	Set<Concept> children = new TreeSet<Concept>();
 	List<RelationshipGroup> groups = new ArrayList<RelationshipGroup>();
-	private Long groupsHash = null;
+	private GroupsHash groupsHash = null;
 	private static final int NOT_SET = -1;
 	private int depth = NOT_SET;
 
@@ -109,8 +109,22 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		return sctId;
 	}
 
-	public Set<Concept> getChildren() {
-		return children;
+	public Set<Concept> getDescendents(boolean immediateChildrenOnly) {
+		if (immediateChildrenOnly) {
+			return children;
+		} else {
+			return populateDescendents(new HashSet<Concept>(), false);
+		}
+	}
+
+	private Set<Concept> populateDescendents(Set<Concept> allDescendents, boolean fullyDefinedOnly) {
+		for (Concept thisChild : children) {
+			if (!fullyDefinedOnly || (fullyDefinedOnly && thisChild.isFullyDefined)) {
+				allDescendents.add(thisChild);
+			}
+			thisChild.populateDescendents(allDescendents, fullyDefinedOnly);
+		}
+		return allDescendents;
 	}
 
 	public Set<Concept> getParents() {
@@ -125,15 +139,18 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	 * @return the sum of the hashes of the groupTypesUUIDs this should uniquely identify a model shape for a concept
 	 * @throws UnsupportedEncodingException
 	 */
-	public Long getGroupsShapeHash() throws UnsupportedEncodingException {
+	public GroupsHash getGroupsShapeHash() throws UnsupportedEncodingException {
 		if (groupsHash == null) {
 			long groupsHashLong = 0L;
+			Set<GroupShape> contributingGroups = new HashSet<GroupShape>();
 			for (RelationshipGroup g : groups) {
-				groupsHashLong += g.getGroupShape().hashCode();
+				groupsHashLong += g.getGroupBasicShape().hashCode();
+				contributingGroups.add(g.getGroupBasicShape());
 			}
-			groupsHash = new Long(groupsHashLong);
+			groupsHash = GroupsHash.get(Long.toString(Math.abs(groupsHashLong)));
+			groupsHash.setHashStructure(contributingGroups);
 		}
-		return Math.abs(groupsHash);
+		return groupsHash;
 	}
 
 	public Set<Concept> getFullyDefinedChildren() {
@@ -144,6 +161,14 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 			}
 		}
 		return fullyDefinedChildren;
+	}
+
+	public Set<Concept> getFullyDefinedDescendents(boolean immediateChildrenOnly) {
+		if (immediateChildrenOnly) {
+			return getFullyDefinedChildren();
+		}
+
+		return populateDescendents(new HashSet<Concept>(), true);
 	}
 
 	public Concept getAncestor(int level) {
@@ -159,7 +184,7 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	}
 
 	public String toString() {
-		return "sctid: " + sctId;
+		return Long.toString(sctId);
 	}
 
 	public Collection<Relationship> getAllAttributes() {

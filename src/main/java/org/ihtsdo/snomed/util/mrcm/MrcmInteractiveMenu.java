@@ -50,13 +50,18 @@ public class MrcmInteractiveMenu {
 						String hierarchySCTID = in.nextLine().trim();
 						new MrcmBuilder().determineAllLCAs(hierarchySCTID, CHARACTERISTIC.INFERRED);
 						break;
+					case "d":
+						printn("Enter SCTID to process: ");
+						String sctid = in.nextLine().trim();
+						new MrcmBuilder().determineMRCM(sctid, CHARACTERISTIC.INFERRED, false);
+						break;
 					case "e":
 						EquivalencyChecker.detectEquivalencies();
 						break;
 					case "m":
 						printn("Enter SCTID to process: ");
-						String sctid = in.nextLine().trim();
-						new MrcmBuilder().determineMRCM(sctid, CHARACTERISTIC.INFERRED);
+						sctid = in.nextLine().trim();
+						new MrcmBuilder().determineMRCM(sctid, CHARACTERISTIC.INFERRED, true);
 						break;
 					case "r":
 						printn("Enter Attribute Type SCTID to process: ");
@@ -86,6 +91,7 @@ public class MrcmInteractiveMenu {
 		print("     Menu    ");
 		print("--------------");
 		print("a - LCA of all attributes");
+		print("d - get mrcm for decendents of concept");
 		print("e - check for equivalencies");
 		print("m - get mrcm for children of concept");
 		print("r - range of attribute values");

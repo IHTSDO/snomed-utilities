@@ -1,20 +1,15 @@
 package org.ihtsdo.snomed.util.mrcm;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.ihtsdo.snomed.util.pojo.Concept;
 import org.ihtsdo.snomed.util.pojo.Description;
 import org.ihtsdo.snomed.util.pojo.GroupShape;
+import org.ihtsdo.snomed.util.pojo.GroupsHash;
 import org.ihtsdo.snomed.util.pojo.Relationship;
 import org.ihtsdo.snomed.util.pojo.RelationshipGroup;
 import org.ihtsdo.snomed.util.rf2.GraphLoader;
@@ -32,42 +27,53 @@ public class MrcmBuilder {
 
 	private final Logger logger = LoggerFactory.getLogger(GraphLoader.class);
 
-	public void determineMRCM(Concept c) throws UnsupportedEncodingException {
-		Set<Concept> siblings = c.getChildren();
-		Set<Concept> definedSiblings = c.getFullyDefinedChildren();
-		logger.info("Examining {} fully defined out of {} children of {}", definedSiblings.size(), siblings.size(), c.getSctId());
+	public void determineMRCM(Concept c, boolean immediateChildrenOnly) throws UnsupportedEncodingException {
+		Set<Concept> siblings = c.getDescendents(immediateChildrenOnly);
+		Set<Concept> definedSiblings = c.getFullyDefinedDescendents(immediateChildrenOnly);
+		logger.info("Examining {} fully defined out of {} children of {}", definedSiblings.size(), siblings.size(),
+				Description.getFormattedConcept(c.getSctId()));
 
-		final ConcurrentMap<String, AtomicInteger> shapePopularity = new ConcurrentHashMap<String, AtomicInteger>();
-		final ConcurrentMap<String, AtomicInteger> groupsHashPopularity = new ConcurrentHashMap<String, AtomicInteger>();
+		examineBasicGroupShape(definedSiblings);
+
+		// examineAbstractShape(definedSiblings);
+
+		// examinePartialGroupMatch(definedSiblings);
+
+		// examinePartialGroupAbstractShapes(definedSiblings);
+	}
+
+	private void examineBasicGroupShape(Set<Concept> definedSiblings) throws UnsupportedEncodingException {
 
 		for (Concept sibling : definedSiblings) {
 			List<RelationshipGroup> groups = sibling.getGroups();
 			for (RelationshipGroup g : groups) {
-				String groupShape = g.getGroupShape();
-				logger.info("{}:{} - {} ", sibling.getSctId(), g.getNumber(), groupShape);
-				shapePopularity.putIfAbsent(groupShape, new AtomicInteger(0));
-				shapePopularity.get(groupShape).incrementAndGet();
+				// Is this a really empty group because of non-contiguous group numbers?
+				GroupShape groupShape = g.getGroupBasicShape();
+				// logger.info("{}:{} - {} ", sibling.getSctId(), g.getNumber(), groupShape);
+				groupShape.incrementPopularity(sibling);
 			}
-			String groupsShapeHash = sibling.getGroupsShapeHash().toString();
-			logger.info("  Groups Shape: {}", groupsShapeHash);
-			groupsHashPopularity.putIfAbsent(groupsShapeHash, new AtomicInteger(0));
-			groupsHashPopularity.get(groupsShapeHash).incrementAndGet();
+			GroupsHash groupsHash = sibling.getGroupsShapeHash();
+			// logger.info("  Groups Shape Hash: {}", groupsHash);
+			groupsHash.incrementPopularity(sibling);
 		}
-		logger.info("Shape Popularity:");
-		CollectionUtils.printSortedMap(shapePopularity);
-		
-		logger.info("Groups Hash Popularity:");
-		CollectionUtils.printSortedMap(groupsHashPopularity);
+		logger.info("*****************\nShape Popularity:");
+		GroupShape.print();
 
+		logger.info("*****************\nGroups Hash Popularity:");
+		GroupsHash.print();
+
+	}
+
+	private void examineAbstractShape(Set<Concept> definedSiblings) throws UnsupportedEncodingException {
 		// Now loop through groups again and see if we can find a better shape by working
 		// with the abstract types (ie the parent of the type)
 		// Calculate a new popularity Map
-		shapePopularity.clear();
+		GroupShape.resetPopularities();
 
 		for (Concept sibling : definedSiblings) {
 			List<RelationshipGroup> groups = sibling.getGroups();
 			for (RelationshipGroup g : groups) {
-				String preferredShapeId = g.getGroupShape();
+				String preferredShapeId = g.getGroupBasicShape().getId();
 				Set<Integer> preferredAbstractCombination = null;
 				// Loop through all the combinations of attributes to express as type ancestors
 				Set<Set<Integer>> allCombinations = CollectionUtils.getIndexCombinations(g.size());
@@ -78,25 +84,28 @@ public class MrcmBuilder {
 					}
 					String groupAbstractShape = g.getGroupAbstractShape(thisCombination);
 					// If ANY sibling already uses the more abstract model, then that's preferable to have in common
-					if (shapePopularity.containsKey(groupAbstractShape)) {
+					if (GroupShape.isKnown(groupAbstractShape)) {
 						logger.info("Abstract Group Shape better for {}: {} (was {})", sibling.getSctId(), groupAbstractShape,
-								g.getGroupShape());
+								g.getGroupBasicShape());
 						preferredShapeId = groupAbstractShape;
 						preferredAbstractCombination = thisCombination;
 					}
 				}
 				// Also put the original shape (which might remain zero popular) so we can compare it later
-				shapePopularity.putIfAbsent(g.getGroupShape(), new AtomicInteger(0));
-				shapePopularity.putIfAbsent(preferredShapeId, new AtomicInteger(0));
-				int newPopularity = shapePopularity.get(preferredShapeId).incrementAndGet();
-				GroupShape preferredShape = new GroupShape(preferredShapeId, null, preferredAbstractCombination, newPopularity);
+				GroupShape.registerShape(g.getGroupBasicShape().getId());
+				GroupShape preferredShape = GroupShape.get(preferredShapeId);
+				preferredShape.incrementPopularity();
+				preferredShape.setAbstractMatch(preferredAbstractCombination);
 				g.setMostPopularShape(preferredShape);
 			}
 		}
 		
 		logger.info("Shape Popularity after considering Abstract Shape:");
-		CollectionUtils.printSortedMap(shapePopularity);
+		GroupShape.print();
 
+	}
+
+	private void examinePartialGroupMatch(Set<Concept> definedSiblings) throws UnsupportedEncodingException {
 		// Now loop through groups again and see if we can find a more popular shape by working
 		// with partial group matches
 		for (Concept sibling : definedSiblings) {
@@ -111,20 +120,18 @@ public class MrcmBuilder {
 					}
 					String groupPartialShape = g.getGroupPartialShape(thisCombination);
 					// If ANY sibling already uses the more abstract model, then that's preferable to have in common
-					if (shapePopularity.containsKey(groupPartialShape) && shapePopularity.get(groupPartialShape).get() > shapePopularity.get(g.getGroupShape()).get()) {
+					if (GroupShape.isKnown(groupPartialShape)
+							&& GroupShape.get(groupPartialShape).getPopularity() > g.getGroupBasicShape().getPopularity()) {
 						logger.info("Partial Group Shape more popular for {}: {} (was {})", sibling.getSctId(), groupPartialShape,
-								g.getGroupShape());
+								g.getGroupBasicShape());
 					}
 				}
 			}
 		}
 
-		// Do both and try to find a more popular partial group abstract shape
-		findPartialGroupAbstractShapes(definedSiblings, shapePopularity);
-
 	}
 
-	private void findPartialGroupAbstractShapes(Set<Concept> definedSiblings, ConcurrentMap<String, AtomicInteger> shapePopularity)
+	private void examinePartialGroupAbstractShapes(Set<Concept> definedSiblings)
 			throws UnsupportedEncodingException {
 		for (Concept sibling : definedSiblings) {
 			List<RelationshipGroup> groups = sibling.getGroups();
@@ -147,10 +154,10 @@ public class MrcmBuilder {
 						String groupPartialAbstractShape = g
 								.getGroupPartialAbstractShape(thisAttributeCombination, thisAbstractCombination);
 						// If ANY sibling already uses the more abstract model, then that's preferable to have in common
-						if (shapePopularity.containsKey(groupPartialAbstractShape)
-								&& shapePopularity.get(groupPartialAbstractShape).get() > shapePopularity.get(g.getGroupShape()).get()) {
+						if (GroupShape.isKnown(groupPartialAbstractShape)
+								&& GroupShape.get(groupPartialAbstractShape).getPopularity() > g.getGroupBasicShape().getPopularity()) {
 							logger.info("Partial Group Abstract Shape more popular for {}: {} (was {})", sibling.getSctId(),
-									groupPartialAbstractShape, g.getGroupShape());
+									groupPartialAbstractShape, g.getGroupBasicShape());
 						}
 					}
 				}
@@ -158,10 +165,11 @@ public class MrcmBuilder {
 		}
 	}
 
-	public void determineMRCM(String sctid, CHARACTERISTIC hierarchyToExamine) throws UnsupportedEncodingException {
+	public void determineMRCM(String sctid, CHARACTERISTIC hierarchyToExamine, boolean immediateChildrenOnly)
+			throws UnsupportedEncodingException {
 		Long conceptToExamine = new Long(sctid);
 		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
-		determineMRCM(c);
+		determineMRCM(c, immediateChildrenOnly);
 	}
 
 	public void displayShape(String sctid, CHARACTERISTIC hierarchyToExamine) {
@@ -257,7 +265,7 @@ public class MrcmBuilder {
 			}
 		}
 
-		for (Concept thisChild : parent.getChildren()) {
+		for (Concept thisChild : parent.getDescendents(true)) {
 			populateAllDestinations(allDestinations, thisChild, targetRelationshipType);
 		}
 	}
@@ -279,7 +287,7 @@ public class MrcmBuilder {
 			allAttributeTypes.add(thisRelationship.getType());
 		}
 
-		for (Concept thisChild : parent.getChildren()) {
+		for (Concept thisChild : parent.getDescendents(true)) {
 			populateAllAttributeTypes(thisChild, allAttributeTypes);
 		}
 	}
