@@ -369,15 +369,6 @@ public class MrcmBuilder {
 		// Now loop through all our groups and work out which parent that group came from
 		for (RelationshipGroup thisGroup : thisConcept.getGroups()) {
 			if (thisGroup.getNumber() != 0) {
-				// Crossovers are introduced by stated relationships, so ensure this group comes
-				// from the stated concept
-				// TODO - Is this true?
-				// Comment out for now, we have another filter to only check for problems caused
-				// by stated relationships.
-				/*
-				 * if (!groupHasStatedCounterpart(thisConcept, thisGroup)) { return CROSSOVER_STATUS.NOT_CROSSOVER; }
-				 */
-
 				ParentGroup parentGroup = findBestFitOrigin(thisConcept, thisGroup, 0);
 				CROSSOVER_STATUS status = checkAttributesForCrossovers(thisConcept, thisGroup.getNumber(), parentGroup, causedByStatedOnly,
 						newIssuesOnly);
@@ -552,13 +543,6 @@ public class MrcmBuilder {
 				}
 
 				if (!errorReport.isEmpty()) {
-					// OR is it the case that we ALSO inherited the more specific relationship from the parent?
-					// Comment out this check because the more specific attribute will always be inherited from the
-					// parent, usually as another group.
-					/*
-					 * for (Relationship ourAttribute : thisConcept.getAllAttributes()) { if
-					 * (ourAttribute.getType().equals(thisParentsAttribute.getType())) { blameElsewhere = true; } }
-					 */
 
 					// Are we only checking for crossovers that have been caused by the stated relationships?
 					if (causedByStatedOnly) {
@@ -568,7 +552,7 @@ public class MrcmBuilder {
 					}
 
 					if (!blameElsewhere) {
-						print(errorReport, "");
+						print(errorReport + "\n", "");
 						break foundone;
 					} else {
 						status = CROSSOVER_STATUS.NOT_CROSSOVER;
@@ -605,33 +589,4 @@ public class MrcmBuilder {
 		}
 	}
 
-	/*
-	 * private CROSSOVER_STATUS checkAttributesForCrossovers(Concept thisConcept, int groupId, ParentGroup parentGroup, boolean
-	 * causedByStatedOnly) { CROSSOVER_STATUS status = CROSSOVER_STATUS.NOT_CROSSOVER; if (parentGroup == null) { return status; } Concept
-	 * thisParent = parentGroup.parent; int parentGroupId = parentGroup.groupId; foundone: for (Relationship thisAttribute :
-	 * thisConcept.getGroup(groupId)) { // if ANY attribute is less specific than the equivalent in the parent, then // declare a crossover
-	 * for (Relationship thisParentsAttribute : thisParent.getGroup(parentGroupId)) { // If this attribute type is an ancestor of the parent
-	 * type, then we have a crossover if (thisParentsAttribute.getType().equals(thisAttribute.getType())) { // but if it's the same, then
-	 * check if the destination is an ancestor. if (thisParentsAttribute.getDestinationConcept().getAncestors(Concept.DEPTH_NOT_SET)
-	 * .contains(thisAttribute.getDestinationConcept())) { status = CROSSOVER_STATUS.DESTINATION_CROSSOVER;
-	 * print(Description.getFormattedConcept(thisConcept.getSctId()) + " group " + groupId + " - " + status, ""); print("Parent: " +
-	 * Description.getFormattedConcept(thisParent.getSctId()) + " group " + parentGroupId, "\t"); print("Attribute destination " +
-	 * Description.getFormattedConcept((thisAttribute.getDestinationConcept().getSctId())), "\t");
-	 * print("More specific parent's destination " +
-	 * Description.getFormattedConcept(thisParentsAttribute.getDestinationConcept().getSctId()), "\t"); break foundone; } } else if
-	 * (thisParentsAttribute.getType().getAncestors(Concept.DEPTH_NOT_SET).contains(thisAttribute.getType())) { // OR is it the case that
-	 * this type is actually coming from one of the other parents? boolean blameElsewhere = false; for (Concept parent :
-	 * thisConcept.getParents()) { for (Relationship parentAttribute : parent.getGroup(parentGroupId)) { if
-	 * (parentAttribute.getType().equals(thisAttribute.getType())) { blameElsewhere = true; } } } // OR is it the case that we ALSO
-	 * inherited the more specific relationship from the parent? for (Relationship ourAttribute : thisConcept.getGroup(groupId)) { if
-	 * (ourAttribute.getType().equals(thisParentsAttribute.getType())) { blameElsewhere = true; } }
-	 * 
-	 * // Are we only checking for crossovers that have been caused by the stated relationships? if (causedByStatedOnly) { if
-	 * (!attributeHasStatedCounterpart(thisConcept, thisAttribute)) { blameElsewhere = true; } } if (!blameElsewhere) { status =
-	 * CROSSOVER_STATUS.TYPE_CROSSOVER; print(Description.getFormattedConcept(thisConcept.getSctId()) + " group " + groupId + " - " +
-	 * status, ""); print("Parent: " + Description.getFormattedConcept(thisParent.getSctId()) + " group " + parentGroupId, "\t");
-	 * print("Attribute type " + Description.getFormattedConcept((thisAttribute.getType().getSctId())), "\t");
-	 * print("More specific parent's type " + Description.getFormattedConcept(thisParentsAttribute.getType().getSctId()), "\t"); break
-	 * foundone; } } } } return status; }
-	 */
 }
