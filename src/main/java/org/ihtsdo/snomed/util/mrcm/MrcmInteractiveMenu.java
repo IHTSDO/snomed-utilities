@@ -13,6 +13,8 @@ public class MrcmInteractiveMenu {
 	private static final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
 
 	public static int mb = 1024 * 1024;
+	
+	private static CHARACTERISTIC currentView = CHARACTERISTIC.INFERRED;
 
 	private static void doHelp() {
 		LOGGER.info("Usage: <concept file location> <stated relationship file location> <inferred realtionship file location> <description file location>");
@@ -49,19 +51,19 @@ public class MrcmInteractiveMenu {
 					case "a":
 						printn("Look at which hierarchy? ");
 						String hierarchySCTID = in.nextLine().trim();
-						new MrcmBuilder().determineAllLCAs(hierarchySCTID, CHARACTERISTIC.INFERRED);
+						new MrcmBuilder().determineAllLCAs(hierarchySCTID, currentView);
 						break;
 					case "c":
 						printn("Restrict to Stated Issues Only? Y/N: ");
-					boolean statedIssuesOnly = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
-					printn("New Issues Only? Y/N: ");
-					boolean newIssuesOnly = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
-					new MrcmBuilder().findCrossovers(CHARACTERISTIC.INFERRED, statedIssuesOnly, newIssuesOnly);
+						boolean statedIssuesOnly = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
+						printn("New Issues Only? Y/N: ");
+						boolean newIssuesOnly = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
+						new MrcmBuilder().findCrossovers(currentView, statedIssuesOnly, newIssuesOnly);
 						break;
 					case "d":
 						printn("Enter SCTID to process: ");
 						String sctid = in.nextLine().trim();
-						new MrcmBuilder().determineMRCM(sctid, CHARACTERISTIC.INFERRED, Concept.DEPTH_NOT_SET);
+						new MrcmBuilder().determineMRCM(sctid, currentView, Concept.DEPTH_NOT_SET);
 						break;
 					case "e":
 						EquivalencyChecker.detectEquivalencies();
@@ -69,26 +71,29 @@ public class MrcmInteractiveMenu {
 					case "m":
 						printn("Enter SCTID to process: ");
 						sctid = in.nextLine().trim();
-						new MrcmBuilder().determineMRCM(sctid, CHARACTERISTIC.INFERRED, Concept.IMMEDIATE_CHILDREN_ONLY);
+						new MrcmBuilder().determineMRCM(sctid, currentView, Concept.IMMEDIATE_CHILDREN_ONLY);
 						break;
 					case "n":
 						printn("Calculate averge depth of concepts");
-						new MrcmBuilder().calculateAverageDepth(CHARACTERISTIC.INFERRED);
+						new MrcmBuilder().calculateAverageDepth(currentView);
 						break;
 					case "p":
-						new MrcmBuilder().findCrossHierarchyParents(CHARACTERISTIC.INFERRED);
+						new MrcmBuilder().findCrossHierarchyParents(currentView);
 						break;
 					case "r":
 						printn("Enter Attribute Type SCTID to process: ");
 						String attributeSCTID = in.nextLine().trim();
 						printn("Found in which hierarchy? ");
 						hierarchySCTID = in.nextLine().trim();
-						new MrcmBuilder().determineValueRange(attributeSCTID, hierarchySCTID, CHARACTERISTIC.INFERRED, true);
+						new MrcmBuilder().determineValueRange(attributeSCTID, hierarchySCTID, currentView, true);
 						break;
 					case "s":
 						printn("Enter SCTID to process: ");
 						sctid = in.nextLine().trim();
-						new MrcmBuilder().displayShape(sctid, CHARACTERISTIC.INFERRED);
+						new MrcmBuilder().displayShape(sctid, currentView);
+						break;
+					case "v":
+						currentView = (currentView == CHARACTERISTIC.INFERRED ? CHARACTERISTIC.STATED : CHARACTERISTIC.INFERRED );
 						break;
 					case "q":
 						System.exit(0);
@@ -103,17 +108,18 @@ public class MrcmInteractiveMenu {
 
 	private void displayMenu() {
 		print("\n");
-		print("     Menu    ");
-		print("--------------");
-		print("a - LCA of all attributes");
+		print("     Menu  - " + currentView + " view");
+		print("---------------------------------------");
+		print("a - LCA of all attribute values");
 		print("c - find examples of crossovers");
 		print("d - get mrcm for decendents of concept");
 		print("e - check for equivalencies");
 		print("m - get mrcm for children of concept");
 		print("n - get statistics on the depths of concepts");
 		print("p - find instances of parents from different hiearchies");
-		print("r - range of attribute values");
+		print("r - range (list) of attribute values in hierarchy");
 		print("s - shape of concept and defined children");
+		print("v - switch view (stated / inferred)");
 		print("q - quit");
 		printn("Choose a function: ");
 
