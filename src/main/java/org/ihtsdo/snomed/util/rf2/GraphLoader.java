@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.ihtsdo.snomed.util.pojo.Concept;
 import org.ihtsdo.snomed.util.pojo.Description;
@@ -29,6 +31,7 @@ public class GraphLoader implements RF2SchemaConstants {
 	private final String statedFile;
 	private final String inferredFile;
 	private final String descriptionFile;
+	private String releaseDate;
 
 	private final Long SNOMED_ROOT_CONCEPT = 138875005L;
 	private final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
@@ -46,6 +49,8 @@ public class GraphLoader implements RF2SchemaConstants {
 
 	public void loadRelationships() throws Exception {
 		
+		releaseDate = determineReleaseDate(conceptFile);
+
 		LOGGER.debug("Loading Concept File: {}", conceptFile);
 		loadConceptFile(conceptFile);
 
@@ -65,6 +70,17 @@ public class GraphLoader implements RF2SchemaConstants {
 		LOGGER.debug("Loading complete");
 	}
 
+
+	private String determineReleaseDate(String filePath) throws Exception {
+		// Might have a date in the directory path, so trim to filename
+		String filename = filePath.substring(filePath.lastIndexOf("/") + 1);
+		Pattern p = Pattern.compile("\\d{8}");
+		Matcher m = p.matcher(filename);
+		if (m.find()) {
+			return m.group();
+		}
+		throw new Exception("Failed to determine release date from " + filePath);
+	}
 
 	/**
 	 * Recurse hierarchy and set shortest path depth for all concepts
@@ -94,6 +110,9 @@ public class GraphLoader implements RF2SchemaConstants {
 							&& !lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(ADDITIONAL_RELATIONSHIP)) {
 						Relationship r = new Relationship(lineItems, characteristic);
 						loadedRelationships.put(r.getUuid(), r);
+						if (lineItems[REL_IDX_EFFECTIVETIME].equals(this.releaseDate)) {
+							r.setChangedThisRelease(true);
+						}
 					}
 				} else {
 					isFirstLine = false;

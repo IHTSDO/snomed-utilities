@@ -331,7 +331,7 @@ public class MrcmBuilder {
 		print("Completed checking " + count + " concepts in " + stopwatch, "");
 	}
 
-	public void findCrossovers(CHARACTERISTIC hierarchyToExamine, boolean causedByStatedOnly) {
+	public void findCrossovers(CHARACTERISTIC hierarchyToExamine, boolean causedByStatedOnly, boolean newIssuesOnly) {
 		// Work through all known concepts.
 		print("Looking for " + (causedByStatedOnly ? " only stated relationship causes" : " all causes."), "");
 		int count = 0;
@@ -339,7 +339,7 @@ public class MrcmBuilder {
 		int typeCrossoversDetected = 0;
 		int destinationCrossoversDetected = 0;
 		for (Concept thisConcept : Concept.getAllConcepts(hierarchyToExamine)) {
-			CROSSOVER_STATUS crossoverStatus = hasCrossover(thisConcept, causedByStatedOnly);
+			CROSSOVER_STATUS crossoverStatus = hasCrossover(thisConcept, causedByStatedOnly, newIssuesOnly);
 			if (!crossoverStatus.equals(CROSSOVER_STATUS.NOT_CROSSOVER)) {
 				if (crossoverStatus.equals(CROSSOVER_STATUS.TYPE_CROSSOVER)) {
 					typeCrossoversDetected++;
@@ -356,10 +356,11 @@ public class MrcmBuilder {
 
 	}
 
-	private CROSSOVER_STATUS hasCrossover(Concept thisConcept, boolean causedByStatedOnly) {
+	private CROSSOVER_STATUS hasCrossover(Concept thisConcept, boolean causedByStatedOnly, boolean newIssuesOnly) {
 		// We can easily match the ungrouped attributes first.
 		for (Concept thisParent : thisConcept.getParents()) {
-			CROSSOVER_STATUS status = checkAttributesForCrossovers(thisConcept, 0, new ParentGroup(thisParent, 0), causedByStatedOnly);
+			CROSSOVER_STATUS status = checkAttributesForCrossovers(thisConcept, 0, new ParentGroup(thisParent, 0), causedByStatedOnly,
+					newIssuesOnly);
 			if (!status.equals(CROSSOVER_STATUS.NOT_CROSSOVER)) {
 				return status;
 			}
@@ -378,7 +379,8 @@ public class MrcmBuilder {
 				 */
 
 				ParentGroup parentGroup = findBestFitOrigin(thisConcept, thisGroup, 0);
-				CROSSOVER_STATUS status = checkAttributesForCrossovers(thisConcept, thisGroup.getNumber(), parentGroup, causedByStatedOnly);
+				CROSSOVER_STATUS status = checkAttributesForCrossovers(thisConcept, thisGroup.getNumber(), parentGroup, causedByStatedOnly,
+						newIssuesOnly);
 				if (!status.equals(CROSSOVER_STATUS.NOT_CROSSOVER)) {
 					return status;
 				}
@@ -495,7 +497,7 @@ public class MrcmBuilder {
 	}
 
 	private CROSSOVER_STATUS checkAttributesForCrossovers(Concept thisConcept, int groupId, ParentGroup parentGroup,
-			boolean causedByStatedOnly) {
+			boolean causedByStatedOnly, boolean newIssuesOnly) {
 		CROSSOVER_STATUS status = CROSSOVER_STATUS.NOT_CROSSOVER;
 		if (parentGroup == null) {
 			return status;
@@ -504,6 +506,11 @@ public class MrcmBuilder {
 		int parentGroupId = parentGroup.groupId;
 		foundone:
 		for (Relationship thisAttribute : thisConcept.getGroup(groupId)) {
+			// Are we only looking for new issues?
+			if (newIssuesOnly && !thisAttribute.isChangedThisRelease()) {
+				continue;
+			}
+
 			// if ANY attribute is less specific than the equivalent in the parent, then
 			// declare a crossover
 			for (Relationship thisParentsAttribute : thisParent.getGroup(parentGroupId)) {

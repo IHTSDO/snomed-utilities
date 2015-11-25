@@ -53,8 +53,10 @@ public class MrcmInteractiveMenu {
 						break;
 					case "c":
 						printn("Restrict to Stated Issues Only? Y/N: ");
-						String restriction = in.nextLine().trim();
-						new MrcmBuilder().findCrossovers(CHARACTERISTIC.INFERRED, restriction.equalsIgnoreCase("Y")?true:false);
+					boolean statedIssuesOnly = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
+					printn("New Issues Only? Y/N: ");
+					boolean newIssuesOnly = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
+					new MrcmBuilder().findCrossovers(CHARACTERISTIC.INFERRED, statedIssuesOnly, newIssuesOnly);
 						break;
 					case "d":
 						printn("Enter SCTID to process: ");
