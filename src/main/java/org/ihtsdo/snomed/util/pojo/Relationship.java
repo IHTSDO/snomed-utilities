@@ -21,6 +21,7 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 	private String uuid;
 	private int group;
 	private boolean active;
+	boolean changedThisRelease = false;
 
 	// Was originally splitting the string in the constructor, but expensive to create object
 	// if active flag is zero, so check this before passing in
@@ -126,6 +127,14 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 
 	public Concept getType() {
 		return Concept.getConcept(this.typeId, CHARACTERISTIC.INFERRED);
+	}
+
+	public boolean isChangedThisRelease() {
+		return changedThisRelease;
+	}
+
+	public void setChangedThisRelease(boolean changedThisRelease) {
+		this.changedThisRelease = changedThisRelease;
 	}
 
 }

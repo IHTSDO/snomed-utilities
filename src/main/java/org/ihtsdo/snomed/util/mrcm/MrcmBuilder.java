@@ -1,11 +1,17 @@
 package org.ihtsdo.snomed.util.mrcm;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.apache.commons.math3.stat.StatUtils;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.ihtsdo.snomed.util.pojo.Concept;
 import org.ihtsdo.snomed.util.pojo.Description;
 import org.ihtsdo.snomed.util.pojo.GroupShape;
@@ -18,18 +24,26 @@ import org.ihtsdo.util.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
 
 public class MrcmBuilder {
 
 	private static String INDENT_0 = "";
 	private static String INDENT_1 = "\t";
+	private static int MAX_MATCH_RELAXATION = 3;
+
+	private static enum CROSSOVER_STATUS {
+		NOT_CROSSOVER, TYPE_CROSSOVER, DESTINATION_CROSSOVER
+	};
+
+	public static Long ROOT_SNOMED_CONCEPT_ID = 138875005L;
 
 	private final Logger logger = LoggerFactory.getLogger(GraphLoader.class);
 
-	public void determineMRCM(Concept c, boolean immediateChildrenOnly) throws UnsupportedEncodingException {
-		Set<Concept> siblings = c.getDescendents(immediateChildrenOnly);
-		Set<Concept> definedSiblings = c.getFullyDefinedDescendents(immediateChildrenOnly);
+	public void determineMRCM(Concept c, int depth) throws UnsupportedEncodingException {
+		Set<Concept> siblings = c.getDescendents(depth);
+		Set<Concept> definedSiblings = c.getFullyDefinedDescendents(depth);
 		logger.info("Examining {} fully defined out of {} children of {}", definedSiblings.size(), siblings.size(),
 				Description.getFormattedConcept(c.getSctId()));
 
@@ -165,18 +179,24 @@ public class MrcmBuilder {
 		}
 	}
 
-	public void determineMRCM(String sctid, CHARACTERISTIC hierarchyToExamine, boolean immediateChildrenOnly)
+	public void determineMRCM(String sctid, CHARACTERISTIC hierarchyToExamine, int depth)
 			throws UnsupportedEncodingException {
-		Long conceptToExamine = new Long(sctid);
+		Long conceptToExamine = null;
+		try {
+			conceptToExamine = new Long(sctid);
+		} catch (NumberFormatException e) {
+			print("Unable to parse SCTID  from '" + sctid + "' due to " + e.getMessage(), "");
+			return;
+		}
 		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
-		determineMRCM(c, immediateChildrenOnly);
+		determineMRCM(c, depth);
 	}
 
 	public void displayShape(String sctid, CHARACTERISTIC hierarchyToExamine) {
 		Long conceptToExamine = new Long(sctid);
 		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
 		prettyPrint(c, INDENT_0);
-		for (Concept child : c.getFullyDefinedChildren()) {
+		for (Concept child : c.getFullyDefinedDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
 			prettyPrint(child, INDENT_1);
 		}
 
@@ -237,9 +257,9 @@ public class MrcmBuilder {
 		Set<Concept> allCommonAncestors = null; // We'll remove not-common ancestors from first result set
 		for (Concept thisConcept : concepts) {
 			if (allCommonAncestors == null) {
-				allCommonAncestors = thisConcept.getAllAncestorsAndSelf();
+				allCommonAncestors = thisConcept.getAncestorsAndSelf(Concept.DEPTH_NOT_SET);
 			} else {
-				allCommonAncestors.retainAll(thisConcept.getAllAncestorsAndSelf());
+				allCommonAncestors.retainAll(thisConcept.getAncestorsAndSelf(Concept.DEPTH_NOT_SET));
 			}
 			if (allCommonAncestors.size() == 0) {
 				return null;
@@ -265,7 +285,7 @@ public class MrcmBuilder {
 			}
 		}
 
-		for (Concept thisChild : parent.getDescendents(true)) {
+		for (Concept thisChild : parent.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
 			populateAllDestinations(allDestinations, thisChild, targetRelationshipType);
 		}
 	}
@@ -287,9 +307,324 @@ public class MrcmBuilder {
 			allAttributeTypes.add(thisRelationship.getType());
 		}
 
-		for (Concept thisChild : parent.getDescendents(true)) {
+		for (Concept thisChild : parent.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
 			populateAllAttributeTypes(thisChild, allAttributeTypes);
 		}
 	}
 
+	public void findCrossHierarchyParents(CHARACTERISTIC hierarchyToExamine) {
+		// Work through all known concepts.
+		int count = 0;
+		Stopwatch stopwatch = Stopwatch.createStarted();
+		for (Concept thisConcept : Concept.getAllConcepts(hierarchyToExamine)) {
+			Concept lcaParent = findCommonAncestor(thisConcept.getParents());
+			if (lcaParent != null && lcaParent.getSctId().equals(ROOT_SNOMED_CONCEPT_ID)) {
+				print(Description.getFormattedConcept(thisConcept.getSctId()), "");
+				for (Concept p : thisConcept.getParents()) {
+					print(Description.getFormattedConcept(p.getSctId()), "\t");
+				}
+			}
+			if (++count % 50000 == 0) {
+				print("Checked " + count, "");
+			}
+		}
+		print("Completed checking " + count + " concepts in " + stopwatch, "");
+	}
+
+	public void findCrossovers(CHARACTERISTIC hierarchyToExamine, boolean causedByStatedOnly) {
+		// Work through all known concepts.
+		print("Looking for " + (causedByStatedOnly ? " only stated relationship causes" : " all causes."), "");
+		int count = 0;
+		Stopwatch stopwatch = Stopwatch.createStarted();
+		int typeCrossoversDetected = 0;
+		int destinationCrossoversDetected = 0;
+		for (Concept thisConcept : Concept.getAllConcepts(hierarchyToExamine)) {
+			CROSSOVER_STATUS crossoverStatus = hasCrossover(thisConcept, causedByStatedOnly);
+			if (!crossoverStatus.equals(CROSSOVER_STATUS.NOT_CROSSOVER)) {
+				if (crossoverStatus.equals(CROSSOVER_STATUS.TYPE_CROSSOVER)) {
+					typeCrossoversDetected++;
+				} else {
+					destinationCrossoversDetected++;
+				}
+			}
+			++count;
+		}
+		print("Completed checking " + count + " concepts in " + stopwatch, "");
+		print("Found " + typeCrossoversDetected + " crossovers in attribute type.", "");
+		print("Found " + destinationCrossoversDetected + " crossovers in attribute destination,", "");
+		print("Total: " + (typeCrossoversDetected + destinationCrossoversDetected), "");
+
+	}
+
+	private CROSSOVER_STATUS hasCrossover(Concept thisConcept, boolean causedByStatedOnly) {
+		// We can easily match the ungrouped attributes first.
+		for (Concept thisParent : thisConcept.getParents()) {
+			CROSSOVER_STATUS status = checkAttributesForCrossovers(thisConcept, 0, new ParentGroup(thisParent, 0), causedByStatedOnly);
+			if (!status.equals(CROSSOVER_STATUS.NOT_CROSSOVER)) {
+				return status;
+			}
+		}
+
+		// Now loop through all our groups and work out which parent that group came from
+		for (RelationshipGroup thisGroup : thisConcept.getGroups()) {
+			if (thisGroup.getNumber() != 0) {
+				// Crossovers are introduced by stated relationships, so ensure this group comes
+				// from the stated concept
+				// TODO - Is this true?
+				// Comment out for now, we have another filter to only check for problems caused
+				// by stated relationships.
+				/*
+				 * if (!groupHasStatedCounterpart(thisConcept, thisGroup)) { return CROSSOVER_STATUS.NOT_CROSSOVER; }
+				 */
+
+				ParentGroup parentGroup = findBestFitOrigin(thisConcept, thisGroup, 0);
+				CROSSOVER_STATUS status = checkAttributesForCrossovers(thisConcept, thisGroup.getNumber(), parentGroup, causedByStatedOnly);
+				if (!status.equals(CROSSOVER_STATUS.NOT_CROSSOVER)) {
+					return status;
+				}
+			}
+		}
+		return CROSSOVER_STATUS.NOT_CROSSOVER;
+	}
+
+	/**
+	 * @return true if at least one of the relationships in the group also exists in a stated group
+	 */
+	private boolean groupHasStatedCounterpart(Concept thisConcept, RelationshipGroup thisGroup) {
+		Concept statedConcept = Concept.getConcept(thisConcept.getSctId(), CHARACTERISTIC.STATED);
+		for (Relationship inferredRelationship : thisGroup.getAttributes()) {
+			for (RelationshipGroup statedRelationshipGroup : statedConcept.getGroups()) {
+				if (statedRelationshipGroup.getNumber() == 0) {
+					continue;
+				}
+				for (Relationship statedRelationship : statedRelationshipGroup.getAttributes()) {
+					if (inferredRelationship.getType().equals(statedRelationship.getType())
+							&& inferredRelationship.getDestinationConcept().equals(statedRelationship.getDestinationConcept())) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	private boolean attributeHasStatedCounterpart(Concept thisConcept, Relationship thisRelationship) {
+		// Basically we're looking to match a relationship group of 1
+		RelationshipGroup tmp = new RelationshipGroup(0);
+		tmp.addAttribute(thisRelationship);
+		return groupHasStatedCounterpart(thisConcept, tmp);
+	}
+
+	/**
+	 * Find which parent and which parent group number a child's relationship group has most likely come from. This may be a partial match
+	 * (fewer attributes in the parent), and it may also match more or less specific relationship types and destinations. Recurse call
+	 * getting more relaxed each time.
+	 * 
+	 * @param thisConcept
+	 * @param thisGroup
+	 * @return
+	 */
+	private ParentGroup findBestFitOrigin(Concept childConcept, RelationshipGroup childGroup, int relaxationLevel) {
+		ParentGroup result = null;
+		Map<ParentGroup, Integer> matches = new HashMap<ParentGroup, Integer>();
+		// Work through all combinations of the child's group attributes
+		Set<Set<Relationship>> attributeCombinations = Sets.powerSet(childGroup.getAttributes());
+		// Work through all parents, and all groups of that parent
+		for (Concept thisParent : childConcept.getParents()) {
+			for (RelationshipGroup thisParentGroup : thisParent.getGroups()) {
+				// Now work through all combinations of the child groups attributes, matching with the required level
+				// of relaxation. Ignore the empty set.
+				// Skip the ungrouped attributes
+				if (thisParentGroup.getNumber() != 0) {
+					for (Set<Relationship> thisCombination : attributeCombinations) {
+						if (matchGroups(thisCombination, thisParentGroup, relaxationLevel)) {
+							matches.put(new ParentGroup(thisParent, thisParentGroup.getNumber()), thisCombination.size());
+						}
+					}
+				}
+			}
+		}
+		// Now did we find any matches and if so, who matched the most attributes?
+		if (matches.size() == 0 && relaxationLevel < MAX_MATCH_RELAXATION) {
+			return findBestFitOrigin(childConcept, childGroup, relaxationLevel + 1);
+		} else {
+			Integer greatestMatches = 0;
+			for (Map.Entry<ParentGroup, Integer> entry : matches.entrySet()) {
+				if (entry.getValue().compareTo(greatestMatches) > 0) {
+					result = entry.getKey();
+				}
+			}
+		}
+		// TODO Need to have a warning if we equally match from two parents or two groups
+		return result;
+	}
+
+	/**
+	 * Match all attributes in both groups, but widen up "thisCombination" type and destination ie both descendents and ancestors to the
+	 * level of relaxationLevel
+	 */
+	private boolean matchGroups(Set<Relationship> thisCombination, RelationshipGroup thisParentGroup, int relaxationLevel) {
+		for (Relationship thisAttribute : thisCombination) {
+			// Now cast our net to the required width for matching on type and destination
+			Set<Concept> matchType = widenNet(thisAttribute.getType(), relaxationLevel);
+			Set<Concept> matchDestination = widenNet(thisAttribute.getDestinationConcept(), relaxationLevel);
+			boolean thisMatch = false;
+			for (Relationship parentAttribute : thisParentGroup.getAttributes()) {
+				if (matchType.contains(parentAttribute.getType()) && matchDestination.contains(parentAttribute.getDestinationConcept())) {
+					thisMatch = true;
+					break;
+				}
+			}
+			// If one fails, they all failed
+			if (!thisMatch) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * @return a set containing both the self, parents and children of a concept to a depth given by the relaxationLevel
+	 */
+	private Set<Concept> widenNet(Concept concept, int netWidth) {
+		Set<Concept> net = new HashSet<Concept>();
+		net.add(concept);
+		net.addAll(concept.getAncestors(netWidth));
+		net.addAll(concept.getDescendents(netWidth));
+		return net;
+	}
+
+	private CROSSOVER_STATUS checkAttributesForCrossovers(Concept thisConcept, int groupId, ParentGroup parentGroup,
+			boolean causedByStatedOnly) {
+		CROSSOVER_STATUS status = CROSSOVER_STATUS.NOT_CROSSOVER;
+		if (parentGroup == null) {
+			return status;
+		}
+		Concept thisParent = parentGroup.parent;
+		int parentGroupId = parentGroup.groupId;
+		foundone:
+		for (Relationship thisAttribute : thisConcept.getGroup(groupId)) {
+			// if ANY attribute is less specific than the equivalent in the parent, then
+			// declare a crossover
+			for (Relationship thisParentsAttribute : thisParent.getGroup(parentGroupId)) {
+				boolean blameElsewhere = false;
+				String errorReport = "";
+				// If this attribute type is an ancestor of the parent type, then we have a crossover
+				if (thisParentsAttribute.getType().equals(thisAttribute.getType())) {
+					// but if it's the same, then check if the destination is an ancestor.
+					if (thisParentsAttribute.getDestinationConcept().getAncestors(Concept.DEPTH_NOT_SET)
+							.contains(thisAttribute.getDestinationConcept())) {
+						status = CROSSOVER_STATUS.DESTINATION_CROSSOVER;
+						errorReport += (Description.getFormattedConcept(thisConcept.getSctId()) + " group " + groupId + " - " + status);
+						errorReport += ("\n\tParent: " + Description.getFormattedConcept(thisParent.getSctId()) + " group " + parentGroupId);
+						errorReport += ("\n\tAttribute destination " + Description.getFormattedConcept((thisAttribute
+								.getDestinationConcept()
+								.getSctId())));
+						errorReport += ("\n\tMore specific parent's destination " + Description.getFormattedConcept(thisParentsAttribute
+								.getDestinationConcept().getSctId()));
+					}
+				} else if (thisParentsAttribute.getType().getAncestors(Concept.DEPTH_NOT_SET).contains(thisAttribute.getType())) {
+					// OR is it the case that this type is actually coming from one of the other parents?
+
+					for (Concept parent : thisConcept.getParents()) {
+						for (Relationship parentAttribute : parent.getGroup(parentGroupId)) {
+							if (parentAttribute.getType().equals(thisAttribute.getType())) {
+								blameElsewhere = true;
+							}
+						}
+					}
+
+					if (!blameElsewhere) {
+						status = CROSSOVER_STATUS.TYPE_CROSSOVER;
+						errorReport += (Description.getFormattedConcept(thisConcept.getSctId()) + " group " + groupId + " - " + status);
+						errorReport += ("\n\tParent: " + Description.getFormattedConcept(thisParent.getSctId()) + " group " + parentGroupId);
+						errorReport += ("\n\tAttribute type " + Description.getFormattedConcept((thisAttribute.getType().getSctId())));
+						errorReport += ("\n\tMore specific parent's type " + Description.getFormattedConcept(thisParentsAttribute.getType()
+								.getSctId()));
+					}
+				}
+
+				if (!errorReport.isEmpty()) {
+					// OR is it the case that we ALSO inherited the more specific relationship from the parent?
+					// Comment out this check because the more specific attribute will always be inherited from the
+					// parent, usually as another group.
+					/*
+					 * for (Relationship ourAttribute : thisConcept.getAllAttributes()) { if
+					 * (ourAttribute.getType().equals(thisParentsAttribute.getType())) { blameElsewhere = true; } }
+					 */
+
+					// Are we only checking for crossovers that have been caused by the stated relationships?
+					if (causedByStatedOnly) {
+						if (!attributeHasStatedCounterpart(thisConcept, thisAttribute)) {
+							blameElsewhere = true;
+						}
+					}
+
+					if (!blameElsewhere) {
+						print(errorReport, "");
+						break foundone;
+					} else {
+						status = CROSSOVER_STATUS.NOT_CROSSOVER;
+					}
+				}
+			}
+		}
+		return status;
+	}
+
+	public void calculateAverageDepth(CHARACTERISTIC hierarchyToExamine) {
+		Collection<Concept> allConcepts = Concept.getAllConcepts(hierarchyToExamine);
+		double[] depths = new double[allConcepts.size()];
+		int idx = 0;
+		for (Concept thisConcept : allConcepts) {
+			depths[idx++] = thisConcept.getDepth();
+		}
+		print("Items: " + depths.length, "");
+		print("Max: " + StatUtils.max(depths), "");
+		print("Mean: " + (double) Math.round(new Mean().evaluate(depths) * 100) / 100.00, "");
+		print("Median: " + new Median().evaluate(depths), "");
+		print("Mode: " + StatUtils.mode(depths)[0], "");
+		print("Variance: " + (double) Math.round(StatUtils.variance(depths) * 100) / 100.00, "");
+	}
+
+	// Grouper class identifying both a parent and a group id
+	private class ParentGroup {
+		Concept parent;
+		int groupId;
+
+		ParentGroup(Concept parent, int groupId) {
+			this.parent = parent;
+			this.groupId = groupId;
+		}
+	}
+
+	/*
+	 * private CROSSOVER_STATUS checkAttributesForCrossovers(Concept thisConcept, int groupId, ParentGroup parentGroup, boolean
+	 * causedByStatedOnly) { CROSSOVER_STATUS status = CROSSOVER_STATUS.NOT_CROSSOVER; if (parentGroup == null) { return status; } Concept
+	 * thisParent = parentGroup.parent; int parentGroupId = parentGroup.groupId; foundone: for (Relationship thisAttribute :
+	 * thisConcept.getGroup(groupId)) { // if ANY attribute is less specific than the equivalent in the parent, then // declare a crossover
+	 * for (Relationship thisParentsAttribute : thisParent.getGroup(parentGroupId)) { // If this attribute type is an ancestor of the parent
+	 * type, then we have a crossover if (thisParentsAttribute.getType().equals(thisAttribute.getType())) { // but if it's the same, then
+	 * check if the destination is an ancestor. if (thisParentsAttribute.getDestinationConcept().getAncestors(Concept.DEPTH_NOT_SET)
+	 * .contains(thisAttribute.getDestinationConcept())) { status = CROSSOVER_STATUS.DESTINATION_CROSSOVER;
+	 * print(Description.getFormattedConcept(thisConcept.getSctId()) + " group " + groupId + " - " + status, ""); print("Parent: " +
+	 * Description.getFormattedConcept(thisParent.getSctId()) + " group " + parentGroupId, "\t"); print("Attribute destination " +
+	 * Description.getFormattedConcept((thisAttribute.getDestinationConcept().getSctId())), "\t");
+	 * print("More specific parent's destination " +
+	 * Description.getFormattedConcept(thisParentsAttribute.getDestinationConcept().getSctId()), "\t"); break foundone; } } else if
+	 * (thisParentsAttribute.getType().getAncestors(Concept.DEPTH_NOT_SET).contains(thisAttribute.getType())) { // OR is it the case that
+	 * this type is actually coming from one of the other parents? boolean blameElsewhere = false; for (Concept parent :
+	 * thisConcept.getParents()) { for (Relationship parentAttribute : parent.getGroup(parentGroupId)) { if
+	 * (parentAttribute.getType().equals(thisAttribute.getType())) { blameElsewhere = true; } } } // OR is it the case that we ALSO
+	 * inherited the more specific relationship from the parent? for (Relationship ourAttribute : thisConcept.getGroup(groupId)) { if
+	 * (ourAttribute.getType().equals(thisParentsAttribute.getType())) { blameElsewhere = true; } }
+	 * 
+	 * // Are we only checking for crossovers that have been caused by the stated relationships? if (causedByStatedOnly) { if
+	 * (!attributeHasStatedCounterpart(thisConcept, thisAttribute)) { blameElsewhere = true; } } if (!blameElsewhere) { status =
+	 * CROSSOVER_STATUS.TYPE_CROSSOVER; print(Description.getFormattedConcept(thisConcept.getSctId()) + " group " + groupId + " - " +
+	 * status, ""); print("Parent: " + Description.getFormattedConcept(thisParent.getSctId()) + " group " + parentGroupId, "\t");
+	 * print("Attribute type " + Description.getFormattedConcept((thisAttribute.getType().getSctId())), "\t");
+	 * print("More specific parent's type " + Description.getFormattedConcept(thisParentsAttribute.getType().getSctId()), "\t"); break
+	 * foundone; } } } } return status; }
+	 */
 }

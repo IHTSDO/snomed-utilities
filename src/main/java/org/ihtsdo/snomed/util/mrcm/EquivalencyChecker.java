@@ -23,7 +23,7 @@ public class EquivalencyChecker {
 		long childrenChecked = 0;
 		for (Concept thisConcept : Concept.getAllConcepts(CHARACTERISTIC.INFERRED)) {
 			if (thisConcept.isFullyDefined()) {
-				for (Concept thisChild : thisConcept.getFullyDefinedChildren()) {
+				for (Concept thisChild : thisConcept.getFullyDefinedDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
 					checkForEquivalency(thisChild, thisConcept);
 					if (++childrenChecked % 5000 == 0) {
 						LOGGER.info("Checked {} children", childrenChecked);

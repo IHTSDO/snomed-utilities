@@ -24,8 +24,9 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	Set<Concept> children = new TreeSet<Concept>();
 	List<RelationshipGroup> groups = new ArrayList<RelationshipGroup>();
 	private GroupsHash groupsHash = null;
-	private static final int NOT_SET = -1;
-	private int depth = NOT_SET;
+	public static final int DEPTH_NOT_SET = -1;
+	public static final int IMMEDIATE_CHILDREN_ONLY = 1;
+	private int depth = DEPTH_NOT_SET;
 
 	public Concept(Long id) {
 		this.sctId = id;
@@ -73,7 +74,6 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		fullyDefinedMap.put(Long.valueOf(sctIdStr), Boolean.TRUE);
 	}
 
-
 	public void addAttribute(Relationship r) {
 		assert this.equals(r.getSourceConcept());
 
@@ -109,20 +109,23 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		return sctId;
 	}
 
-	public Set<Concept> getDescendents(boolean immediateChildrenOnly) {
-		if (immediateChildrenOnly) {
+	public Set<Concept> getDescendents(int depth) {
+		if (depth == 1) {
 			return children;
 		} else {
-			return populateDescendents(new HashSet<Concept>(), false);
+			return populateDescendents(new HashSet<Concept>(), false, depth);
 		}
 	}
 
-	private Set<Concept> populateDescendents(Set<Concept> allDescendents, boolean fullyDefinedOnly) {
+	private Set<Concept> populateDescendents(Set<Concept> allDescendents, boolean fullyDefinedOnly, int depth) {
 		for (Concept thisChild : children) {
 			if (!fullyDefinedOnly || (fullyDefinedOnly && thisChild.isFullyDefined)) {
 				allDescendents.add(thisChild);
 			}
-			thisChild.populateDescendents(allDescendents, fullyDefinedOnly);
+			if (depth == DEPTH_NOT_SET || depth > 1) {
+				int newDepth = depth == DEPTH_NOT_SET ? DEPTH_NOT_SET : depth - 1;
+				thisChild.populateDescendents(allDescendents, fullyDefinedOnly, newDepth);
+			}
 		}
 		return allDescendents;
 	}
@@ -153,22 +156,8 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		return groupsHash;
 	}
 
-	public Set<Concept> getFullyDefinedChildren() {
-		Set<Concept> fullyDefinedChildren = new HashSet<Concept>();
-		for (Concept c : children) {
-			if (c.isFullyDefined) {
-				fullyDefinedChildren.add(c);
-			}
-		}
-		return fullyDefinedChildren;
-	}
-
-	public Set<Concept> getFullyDefinedDescendents(boolean immediateChildrenOnly) {
-		if (immediateChildrenOnly) {
-			return getFullyDefinedChildren();
-		}
-
-		return populateDescendents(new HashSet<Concept>(), true);
+	public Set<Concept> getFullyDefinedDescendents(int depth) {
+		return populateDescendents(new HashSet<Concept>(), true, depth);
 	}
 
 	public Concept getAncestor(int level) {
@@ -202,23 +191,35 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	public void setDepth(int depth) {
 		// We'll maintain the shortest possible path, so don't allow
 		// depth to increase
-		if (this.depth == NOT_SET || depth < this.depth) {
+		if (this.depth == DEPTH_NOT_SET || depth < this.depth) {
 			this.depth = depth;
 		}
 	}
 
-	private void populateAllAncestors(Set<Concept> ancestors) {
+	private void populateAllAncestors(Set<Concept> ancestors, int depth) {
 		for (Concept thisParent : parents) {
 			ancestors.add(thisParent);
-			thisParent.populateAllAncestors(ancestors);
+			if (depth == DEPTH_NOT_SET || depth > 1) {
+				int newDepth = depth == DEPTH_NOT_SET ? DEPTH_NOT_SET : depth - 1;
+				thisParent.populateAllAncestors(ancestors, newDepth);
+			}
 		}
 	}
 
-	public Set<Concept> getAllAncestorsAndSelf() {
+	public Set<Concept> getAncestors(int depth) {
 		Set<Concept> allAncestorsAndSelf = new HashSet<Concept>();
-		allAncestorsAndSelf.add(this);
-		this.populateAllAncestors(allAncestorsAndSelf);
+		this.populateAllAncestors(allAncestorsAndSelf, depth);
 		return allAncestorsAndSelf;
+	}
+
+	public Set<Concept> getAncestorsAndSelf(int depth) {
+		Set<Concept> allAncestorsAndSelf = getAncestors(depth);
+		allAncestorsAndSelf.add(this);
+		return allAncestorsAndSelf;
+	}
+
+	public Set<Relationship> getGroup(int i) {
+		return groups.size() > i ? groups.get(i).getAttributes() : new HashSet<Relationship>();
 	}
 
 }

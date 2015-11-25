@@ -31,6 +31,7 @@ public class GraphLoader implements RF2SchemaConstants {
 	private final String descriptionFile;
 
 	private final Long SNOMED_ROOT_CONCEPT = 138875005L;
+	private final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
 
 
 	private Map<String, Relationship> statedRelationships;
@@ -66,11 +67,11 @@ public class GraphLoader implements RF2SchemaConstants {
 
 
 	/**
-	 * Recurse hiearchy and set shortest path depth for all concepts
+	 * Recurse hierarchy and set shortest path depth for all concepts
 	 */
 	private void populateHierarchyDepth(Concept startingPoint, int currentDepth) {
 		startingPoint.setDepth(currentDepth);
-		for (Concept child : startingPoint.getDescendents(true)) {
+		for (Concept child : startingPoint.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
 			populateHierarchyDepth(child, currentDepth + 1);
 		}
 	}
@@ -89,7 +90,8 @@ public class GraphLoader implements RF2SchemaConstants {
 				if (!isFirstLine) {
 					String[] lineItems = line.split(FIELD_DELIMITER);
 					// Only store active relationships
-					if (lineItems[REL_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
+					if (lineItems[REL_IDX_ACTIVE].equals(ACTIVE_FLAG)
+							&& !lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(ADDITIONAL_RELATIONSHIP)) {
 						Relationship r = new Relationship(lineItems, characteristic);
 						loadedRelationships.put(r.getUuid(), r);
 					}

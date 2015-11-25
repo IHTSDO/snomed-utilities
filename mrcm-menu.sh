@@ -32,7 +32,7 @@ echo
 echo "Interactive MRCM"
 echo
 default="/Users/Peter/tmp/20150731_flat"
-read -p "What directory are your snapshot concept/relationship files in? [${default}] " sourceDir
+read -p "Where are your snapshot SNOMED files (? [${default}] " sourceDir
 if [ -z "${sourceDir}" ]
 then
   sourceDir=${default}

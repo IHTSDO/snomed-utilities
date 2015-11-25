@@ -2,6 +2,7 @@ package org.ihtsdo.snomed.util.mrcm;
 
 import java.util.Scanner;
 
+import org.ihtsdo.snomed.util.pojo.Concept;
 import org.ihtsdo.snomed.util.rf2.GraphLoader;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.CHARACTERISTIC;
 import org.slf4j.Logger;
@@ -50,10 +51,15 @@ public class MrcmInteractiveMenu {
 						String hierarchySCTID = in.nextLine().trim();
 						new MrcmBuilder().determineAllLCAs(hierarchySCTID, CHARACTERISTIC.INFERRED);
 						break;
+					case "c":
+						printn("Restrict to Stated Issues Only? Y/N: ");
+						String restriction = in.nextLine().trim();
+						new MrcmBuilder().findCrossovers(CHARACTERISTIC.INFERRED, restriction.equalsIgnoreCase("Y")?true:false);
+						break;
 					case "d":
 						printn("Enter SCTID to process: ");
 						String sctid = in.nextLine().trim();
-						new MrcmBuilder().determineMRCM(sctid, CHARACTERISTIC.INFERRED, false);
+						new MrcmBuilder().determineMRCM(sctid, CHARACTERISTIC.INFERRED, Concept.DEPTH_NOT_SET);
 						break;
 					case "e":
 						EquivalencyChecker.detectEquivalencies();
@@ -61,7 +67,14 @@ public class MrcmInteractiveMenu {
 					case "m":
 						printn("Enter SCTID to process: ");
 						sctid = in.nextLine().trim();
-						new MrcmBuilder().determineMRCM(sctid, CHARACTERISTIC.INFERRED, true);
+						new MrcmBuilder().determineMRCM(sctid, CHARACTERISTIC.INFERRED, Concept.IMMEDIATE_CHILDREN_ONLY);
+						break;
+					case "n":
+						printn("Calculate averge depth of concepts");
+						new MrcmBuilder().calculateAverageDepth(CHARACTERISTIC.INFERRED);
+						break;
+					case "p":
+						new MrcmBuilder().findCrossHierarchyParents(CHARACTERISTIC.INFERRED);
 						break;
 					case "r":
 						printn("Enter Attribute Type SCTID to process: ");
@@ -91,9 +104,12 @@ public class MrcmInteractiveMenu {
 		print("     Menu    ");
 		print("--------------");
 		print("a - LCA of all attributes");
+		print("c - find examples of crossovers");
 		print("d - get mrcm for decendents of concept");
 		print("e - check for equivalencies");
 		print("m - get mrcm for children of concept");
+		print("n - get statistics on the depths of concepts");
+		print("p - find instances of parents from different hiearchies");
 		print("r - range of attribute values");
 		print("s - shape of concept and defined children");
 		print("q - quit");
