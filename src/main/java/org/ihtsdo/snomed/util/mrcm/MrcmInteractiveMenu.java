@@ -31,14 +31,7 @@ public class MrcmInteractiveMenu {
 		reportMemory();
 
 		new MrcmInteractiveMenu().start();
-		/*
-		 * // long conceptToExamine = 128927009L; // Procedure by Method long conceptToExamine = 362958002L; // Procedure by Site // long
-		 * conceptToExamine = 285579008L; //Taking swab from body site CHARACTERISTIC hierarchyToExamine = CHARACTERISTIC.INFERRED; //
-		 * CHARACTERISTIC hierarchyToExamine = CHARACTERISTIC.STATED;
-		 * LOGGER.info("Examining Siblings of {} in the {} hierarchy to Determine MRCM Rules...", conceptToExamine, hierarchyToExamine); //
-		 * Lets start with children of "Procedure by site" Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
-		 * determineMRCM(c);
-		 */
+
 	}
 
 	public void start() throws NumberFormatException, Exception {
@@ -67,6 +60,9 @@ public class MrcmInteractiveMenu {
 						break;
 					case "e":
 						EquivalencyChecker.detectEquivalencies();
+						break;
+					case "h":
+						new MrcmBuilder().getHierarchyStats(currentView);
 						break;
 					case "m":
 						printn("Enter SCTID to process: ");
@@ -114,6 +110,7 @@ public class MrcmInteractiveMenu {
 		print("c - find examples of crossovers");
 		print("d - get mrcm for decendents of concept");
 		print("e - check for equivalencies");
+		print("h - report hierarchy stats");
 		print("m - get mrcm for children of concept");
 		print("n - get statistics on the depths of concepts");
 		print("p - find instances of parents from different hiearchies");

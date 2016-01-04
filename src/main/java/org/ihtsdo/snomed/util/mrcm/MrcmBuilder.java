@@ -1,6 +1,7 @@
 package org.ihtsdo.snomed.util.mrcm;
 
 import java.io.UnsupportedEncodingException;
+import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -587,6 +588,27 @@ public class MrcmBuilder {
 			this.parent = parent;
 			this.groupId = groupId;
 		}
+	}
+
+	public void getHierarchyStats(CHARACTERISTIC hierarchyToExamine) {
+		Concept rootConcept = Concept.getConcept(ROOT_SNOMED_CONCEPT_ID, hierarchyToExamine);
+		for (Concept thisTopLevelHierarchy : rootConcept.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
+			print(Description.getFormattedConcept(thisTopLevelHierarchy.getSctId()), "");
+			print("Percentage Fully Defined: " + getDefinedStats(thisTopLevelHierarchy), "\t");
+		}
+	}
+
+	private String getDefinedStats(Concept c) {
+		// Get all the children, how many of them are defined?
+		Set<Concept> allDescendents = c.getDescendents(Concept.DEPTH_NOT_SET);
+		int definedCount = 0;
+		for (Concept thisDescendent : allDescendents) {
+			if (thisDescendent.isFullyDefined()) {
+				definedCount++;
+			}
+		}
+		String percentage = new DecimalFormat("#0.0%").format((float) definedCount / allDescendents.size());
+		return definedCount + " / " + allDescendents.size() + " = " + percentage;
 	}
 
 }
