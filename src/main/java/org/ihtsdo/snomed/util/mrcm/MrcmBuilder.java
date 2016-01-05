@@ -43,8 +43,8 @@ public class MrcmBuilder {
 	private final Logger logger = LoggerFactory.getLogger(GraphLoader.class);
 
 	public void determineMRCM(Concept c, int depth) throws UnsupportedEncodingException {
-		Set<Concept> siblings = c.getDescendents(depth);
-		Set<Concept> definedSiblings = c.getFullyDefinedDescendents(depth);
+		Set<Concept> siblings = c.getDescendents(depth, false);
+		Set<Concept> definedSiblings = c.getDescendents(depth, true);
 		logger.info("Examining {} fully defined out of {} children of {}", definedSiblings.size(), siblings.size(),
 				Description.getFormattedConcept(c.getSctId()));
 
@@ -197,7 +197,7 @@ public class MrcmBuilder {
 		Long conceptToExamine = new Long(sctid);
 		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
 		prettyPrint(c, INDENT_0);
-		for (Concept child : c.getFullyDefinedDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
+		for (Concept child : c.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY, true)) {
 			prettyPrint(child, INDENT_1);
 		}
 
@@ -286,7 +286,7 @@ public class MrcmBuilder {
 			}
 		}
 
-		for (Concept thisChild : parent.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
+		for (Concept thisChild : parent.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY, false)) {
 			populateAllDestinations(allDestinations, thisChild, targetRelationshipType);
 		}
 	}
@@ -308,7 +308,7 @@ public class MrcmBuilder {
 			allAttributeTypes.add(thisRelationship.getType());
 		}
 
-		for (Concept thisChild : parent.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
+		for (Concept thisChild : parent.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY, false)) {
 			populateAllAttributeTypes(thisChild, allAttributeTypes);
 		}
 	}
@@ -484,7 +484,7 @@ public class MrcmBuilder {
 		Set<Concept> net = new HashSet<Concept>();
 		net.add(concept);
 		net.addAll(concept.getAncestors(netWidth));
-		net.addAll(concept.getDescendents(netWidth));
+		net.addAll(concept.getDescendents(netWidth, false));
 		return net;
 	}
 
@@ -592,7 +592,7 @@ public class MrcmBuilder {
 
 	public void getHierarchyStats(CHARACTERISTIC hierarchyToExamine) {
 		Concept rootConcept = Concept.getConcept(ROOT_SNOMED_CONCEPT_ID, hierarchyToExamine);
-		for (Concept thisTopLevelHierarchy : rootConcept.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
+		for (Concept thisTopLevelHierarchy : rootConcept.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY, false)) {
 			print(Description.getFormattedConcept(thisTopLevelHierarchy.getSctId()), "");
 			print("Percentage Fully Defined: " + getDefinedStats(thisTopLevelHierarchy), "\t");
 		}
@@ -600,7 +600,7 @@ public class MrcmBuilder {
 
 	private String getDefinedStats(Concept c) {
 		// Get all the children, how many of them are defined?
-		Set<Concept> allDescendents = c.getDescendents(Concept.DEPTH_NOT_SET);
+		Set<Concept> allDescendents = c.getDescendents(Concept.DEPTH_NOT_SET, false);
 		int definedCount = 0;
 		for (Concept thisDescendent : allDescendents) {
 			if (thisDescendent.isFullyDefined()) {
@@ -609,6 +609,91 @@ public class MrcmBuilder {
 		}
 		String percentage = new DecimalFormat("#0.0%").format((float) definedCount / allDescendents.size());
 		return definedCount + " / " + allDescendents.size() + " = " + percentage;
+	}
+
+	public void linguisticSearch(CHARACTERISTIC currentView, SearchParameters searchParams) {
+		// Start with all concepts in the hierarchy and filter out unwanted by description and attribute
+		Set<Concept> matches = searchParams.hierarchy.getDescendents(Concept.DEPTH_NOT_SET, searchParams.fullyDefinedOnly);
+
+		matches = filterOutDescriptions(matches, searchParams.description, searchParams.descriptionPresent);
+		matches = filterOutAttributes(matches, searchParams);
+
+		for (Concept thisMatch : matches) {
+			print(Description.getFormattedConcept(thisMatch.getSctId()), "");
+		}
+
+		print("Found " + matches.size() + " matching concepts", "");
+	}
+
+	private Set<Concept> filterOutDescriptions(Set<Concept> matches, String searchTerm, boolean mustBePresent) {
+		Set<Concept> filteredConcepts = new HashSet<Concept>();
+		for (Concept thisMatch : matches) {
+			String desc = Description.getDescription(thisMatch).toLowerCase();
+			if (desc.contains(searchTerm)) {
+				if (mustBePresent) {
+					filteredConcepts.add(thisMatch);
+				}
+			} else if (!mustBePresent) {
+				filteredConcepts.add(thisMatch);
+			}
+		}
+		return filteredConcepts;
+	}
+
+
+	private Set<Concept> filterOutAttributes(Set<Concept> matches, SearchParameters params) {
+		Set<Concept> filteredConcepts = new HashSet<Concept>();
+		for (Concept thisMatch : matches) {
+			if (conceptHasAttribute(thisMatch, params)) {
+				if (params.attributeSearchPresent) {
+					filteredConcepts.add(thisMatch);
+				}
+			} else if (!params.attributeSearchPresent) {
+				filteredConcepts.add(thisMatch);
+			}
+		}
+		return filteredConcepts;
+	}
+
+	private boolean conceptHasAttribute(Concept c, SearchParameters params) {
+		switch (params.attributeSearch) {
+			case AttributeType : 
+				return conceptHasAttributeType(c, params.attributeType);
+			case AttributeValue:
+				return conceptHasAttributeValue(c, params.attributeValue);
+			case AttributeValueString:
+				return conceptHasAttributeValueString(c, params.attributeValueString);
+			default :
+				throw new RuntimeException ("Unexpected attribute search criteria " + params.attributeSearch);
+		}
+	}
+
+	private boolean conceptHasAttributeType(Concept c, Concept attributeType) {
+		for (Relationship r : c.getAllAttributes()) {
+			if (r.isType(attributeType.getSctId())) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private boolean conceptHasAttributeValue(Concept c, Concept attributeValue) {
+		for (Relationship r : c.getAllAttributes()) {
+			if (r.getDestinationConcept().equals(attributeValue)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean conceptHasAttributeValueString(Concept c, String attributeValueString) {
+		for (Relationship r : c.getAllAttributes()) {
+			String attributeValueFSN = Description.getDescription(r.getDestinationConcept()).toLowerCase();
+			if (attributeValueFSN.contains(attributeValueString)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

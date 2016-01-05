@@ -27,4 +27,8 @@ public class Description implements RF2SchemaConstants {
 		}
 		return formattedConcept;
 	}
+
+	public static String getDescription(Concept c) {
+		return allFSNs.get(c.getSctId()).term;
+	}
 }

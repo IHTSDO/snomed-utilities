@@ -109,12 +109,8 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		return sctId;
 	}
 
-	public Set<Concept> getDescendents(int depth) {
-		if (depth == 1) {
-			return children;
-		} else {
-			return populateDescendents(new HashSet<Concept>(), false, depth);
-		}
+	public Set<Concept> getDescendents(int depth, boolean fullyDefinedOnly) {
+		return populateDescendents(new HashSet<Concept>(), fullyDefinedOnly, depth);
 	}
 
 	private Set<Concept> populateDescendents(Set<Concept> allDescendents, boolean fullyDefinedOnly, int depth) {
@@ -154,10 +150,6 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 			groupsHash.setHashStructure(contributingGroups);
 		}
 		return groupsHash;
-	}
-
-	public Set<Concept> getFullyDefinedDescendents(int depth) {
-		return populateDescendents(new HashSet<Concept>(), true, depth);
 	}
 
 	public Concept getAncestor(int level) {

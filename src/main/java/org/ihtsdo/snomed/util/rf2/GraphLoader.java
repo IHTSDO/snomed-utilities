@@ -87,7 +87,7 @@ public class GraphLoader implements RF2SchemaConstants {
 	 */
 	private void populateHierarchyDepth(Concept startingPoint, int currentDepth) {
 		startingPoint.setDepth(currentDepth);
-		for (Concept child : startingPoint.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY)) {
+		for (Concept child : startingPoint.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY, false)) {
 			populateHierarchyDepth(child, currentDepth + 1);
 		}
 	}

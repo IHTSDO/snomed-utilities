@@ -64,6 +64,12 @@ public class MrcmInteractiveMenu {
 					case "h":
 						new MrcmBuilder().getHierarchyStats(currentView);
 						break;
+					case "l":
+						SearchParameters sp = new SearchParameters().init(currentView, in);
+						if (sp != null) {
+							new MrcmBuilder().linguisticSearch(currentView, sp);
+						}
+						break;
 					case "m":
 						printn("Enter SCTID to process: ");
 						sctid = in.nextLine().trim();
@@ -111,6 +117,7 @@ public class MrcmInteractiveMenu {
 		print("d - get mrcm for decendents of concept");
 		print("e - check for equivalencies");
 		print("h - report hierarchy stats");
+		print("l - linguistic/model search");
 		print("m - get mrcm for children of concept");
 		print("n - get statistics on the depths of concepts");
 		print("p - find instances of parents from different hiearchies");
@@ -135,4 +142,5 @@ public class MrcmInteractiveMenu {
 		LOGGER.info("Used Memory: {} Mb", (runtime.totalMemory() - runtime.freeMemory()) / mb);
 		LOGGER.info("Free Memory: {} Mb", runtime.freeMemory() / mb);
 	}
+
 }
