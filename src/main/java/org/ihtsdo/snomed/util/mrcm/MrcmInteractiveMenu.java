@@ -61,6 +61,16 @@ public class MrcmInteractiveMenu {
 					case "e":
 						EquivalencyChecker.detectEquivalencies();
 						break;
+					case "f":
+						printn("Restrict to specific attribute Type? (sctid or blank): ");
+						String typeIdStr = in.nextLine().trim();
+						Long typeId = typeIdStr.length() == 0 ? null : Long.parseLong(typeIdStr);
+						printn("Include descendents of type? Y/N: ");
+						boolean includeDescendants = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
+						printn("Whitelist? eg 127489000, 246093002, 363702006: ");
+						String whiteList = in.nextLine().trim();
+						new MrcmBuilder().findDuplicateTypes(currentView, whiteList, includeDescendants, typeId);
+						break;
 					case "h":
 						new MrcmBuilder().getHierarchyStats(currentView);
 						break;
@@ -94,6 +104,20 @@ public class MrcmInteractiveMenu {
 						sctid = in.nextLine().trim();
 						new MrcmBuilder().displayShape(sctid, currentView);
 						break;
+					case "t":
+						printn("Enter substring to strip out (eg O/E): ");
+						String stripOff = in.nextLine().trim();
+						printn("Drive from which hierarchy? (eg 271880003) ");
+						Long primaryHierarchy = Long.valueOf(in.nextLine().trim());
+						printn("Search in which hieararchy? (eg 404684003) ");
+						Long secondaryHierarchy = Long.valueOf(in.nextLine().trim());
+						new MrcmBuilder().textualSubstringMatch(stripOff, primaryHierarchy, secondaryHierarchy, currentView);
+						break;
+					case "u":
+						printn("Enter value to search for: ");
+						long targetValue = Long.valueOf(in.nextLine().trim());
+						new MrcmBuilder().findConceptsUsingAttributeValue(targetValue, currentView);
+						break;
 					case "v":
 						currentView = (currentView == CHARACTERISTIC.INFERRED ? CHARACTERISTIC.STATED : CHARACTERISTIC.INFERRED );
 						break;
@@ -116,17 +140,19 @@ public class MrcmInteractiveMenu {
 		print("c - find examples of crossovers");
 		print("d - get mrcm for decendents of concept");
 		print("e - check for equivalencies");
+		print("f - find attribute type duplicated in group");
 		print("h - report hierarchy stats");
-		print("l - linguistic/model search");
-		print("m - get mrcm for children of concept");
+		print("l - lexical/model search");
+		print("m - get mrcm for immediate children of concept");
 		print("n - get statistics on the depths of concepts");
 		print("p - find instances of parents from different hiearchies");
 		print("r - range (list) of attribute values in hierarchy");
 		print("s - shape of concept and defined children");
+		print("t - texual matches of substring, order agnostic");
+		print("u - find concepts using attribute value");
 		print("v - switch view (stated / inferred)");
 		print("q - quit");
 		printn("Choose a function: ");
-
 	}
 
 	private void print(String msg) {

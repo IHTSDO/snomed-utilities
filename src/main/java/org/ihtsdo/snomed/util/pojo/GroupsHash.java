@@ -107,7 +107,7 @@ public class GroupsHash {
 		GroupsHash[] hashes = knownHashes.values().toArray(new GroupsHash[knownHashes.size()]);
 		Arrays.sort(hashes, new Comparator<GroupsHash>() {
 			public int compare(GroupsHash o1, GroupsHash o2) {
-				return o2.popularity - o1.popularity;
+				return o1.popularity - o2.popularity;
 			}
 		});
 		return hashes;

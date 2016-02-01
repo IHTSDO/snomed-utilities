@@ -137,4 +137,14 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 		this.changedThisRelease = changedThisRelease;
 	}
 
+	public String toPrettyString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(getGroup())
+		.append(" - ")
+		.append(Description.getFormattedConcept(getTypeId()))
+		.append(": ")
+		.append(Description.getFormattedConcept(getDestinationId()));
+		return sb.toString();
+	}
+
 }

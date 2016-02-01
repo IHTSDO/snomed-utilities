@@ -2,7 +2,9 @@ package org.ihtsdo.snomed.util.mrcm;
 
 import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -71,8 +73,11 @@ public class MrcmBuilder {
 			// logger.info("  Groups Shape Hash: {}", groupsHash);
 			groupsHash.incrementPopularity(sibling);
 		}
-		logger.info("*****************\nShape Popularity:");
-		GroupShape.print();
+
+		// Shape is misleading because really you've got to consider all the groups at the same
+		// time, so we're just going to focus on Hash
+		// logger.info("*****************\nShape Popularity:");
+		// GroupShape.print();
 
 		logger.info("*****************\nGroups Hash Popularity:");
 		GroupsHash.print();
@@ -696,4 +701,163 @@ public class MrcmBuilder {
 		return false;
 	}
 
+	public void findDuplicateTypes(CHARACTERISTIC currentView, String whiteList, boolean includeDescendants, Long typeId) {
+		long conceptsChecked = 0;
+		long duplicatesDetected = 0;
+		Map<String, Map<String, Integer>> duplicateTypeBag = new HashMap<String, Map<String, Integer>>();
+		for (Concept thisConcept : Concept.getAllConcepts(currentView)) {
+			for (RelationshipGroup thisGroup : thisConcept.getGroups()){
+				// Not worried about duplicate types in group 0
+				if (thisGroup.getNumber() == 0) {
+					continue;
+				}
+				duplicatesDetected += findDuplicateTypes(thisGroup, whiteList, includeDescendants, duplicateTypeBag, typeId);
+			}
+			if (++conceptsChecked % 5000 == 0) {
+				print("Checked "+conceptsChecked+" concepts", "");
+			}
+		}
+
+		duplicateTypeSummary(duplicateTypeBag);
+		print("\nDetected " + duplicatesDetected + " duplicate attribute types", "");
+	}
+
+
+	private void duplicateTypeSummary(Map<String, Map<String, Integer>> duplicateTypeBag) {
+
+		print("\n\nSummary\n==========", "");
+
+		for (final Map.Entry<String, Map<String, Integer>> entry : duplicateTypeBag.entrySet()) {
+			print(Description.getFormattedConcept(Long.parseLong(entry.getKey())), "");
+			String[] values = entry.getValue().keySet().toArray(new String[entry.getValue().size()]);
+			Arrays.sort(values, new Comparator<String>() {
+				public int compare(String o1, String o2) {
+					return entry.getValue().get(o1).intValue() - entry.getValue().get(o2).intValue();
+				}
+			});
+
+			for (String thisValueDuplicate : values) {
+				String[] duplicatedElements = thisValueDuplicate.split(",");
+				print(Description.getFormattedConcept(Long.parseLong(duplicatedElements[0])) + " plus "
+						+ Description.getFormattedConcept(Long.parseLong(duplicatedElements[1])) + " - "
+						+ entry.getValue().get(thisValueDuplicate), "\t");
+			}
+		}
+	}
+
+	private int findDuplicateTypes(RelationshipGroup thisGroup, String whiteList, boolean includeDescendants,
+			Map<String, Map<String, Integer>> duplicateTypeBag, Long typeId) {
+		//For every attribute, see if there's another attribute in this group with the same (or parent) type,
+		//but (to prevent matching to self) a different value
+		for (Relationship thisAttribute : thisGroup.getAttributes()) {
+			if (whiteList.contains(thisAttribute.getTypeId().toString()) || (typeId != null && !thisAttribute.getTypeId().equals(typeId))) {
+				continue;
+			}
+			for (Relationship comparisonAttribute : thisGroup.getAttributes()) {
+				if (thisAttribute.getTypeId().equals(comparisonAttribute.getTypeId()) || (
+						includeDescendants == true && thisAttribute.getType().getParents().contains(comparisonAttribute.getType()))){
+					if (!thisAttribute.getDestinationId().equals(comparisonAttribute.getDestinationId())) {
+						print ("Found duplicate attribute types in concept: " + Description.getFormattedConcept(thisAttribute.getSourceId()),"");
+						print(thisAttribute.toPrettyString(), "");
+						print(comparisonAttribute.toPrettyString(), "");
+
+						// Have we seen this attribute type before?
+						String valueCombo = thisAttribute.getDestinationId() + "," + comparisonAttribute.getDestinationId();
+						Map<String, Integer> valueCounts = duplicateTypeBag.get(thisAttribute.getTypeId().toString());
+						if (valueCounts == null) {
+							valueCounts = new HashMap<String, Integer>();
+							duplicateTypeBag.put(thisAttribute.getTypeId().toString(), valueCounts);
+						}
+						// Now have we see this attribute type + value combination before?
+						Integer thisCounter = valueCounts.get(valueCombo);
+						if (thisCounter == null) {
+							thisCounter = new Integer(0);
+						}
+						thisCounter = new Integer(thisCounter.intValue() + 1);
+						valueCounts.put(valueCombo, thisCounter);
+						return 1;
+					}
+				}
+			}
+		}
+		return 0;
+	}
+
+	public void findConceptsUsingAttributeValue(long targetSCTID, CHARACTERISTIC currentView) {
+		long conceptsChecked = 0;
+		long AVDetected = 0;
+
+		for (Concept thisConcept : Concept.getAllConcepts(currentView)) {
+			for (Relationship thisAttribute : thisConcept.getAllAttributes()) {
+				if (thisAttribute.getDestinationId().equals(targetSCTID)) {
+					print(Description.getFormattedConcept(thisConcept.getSctId()), "");
+					print("  Attribute: " + thisAttribute.toPrettyString(), "");
+					AVDetected++;
+				}
+			}
+			if (++conceptsChecked % 5000 == 0) {
+				print("Checked " + conceptsChecked + " concepts", "");
+			}
+		}
+		print("Detected " + AVDetected + " instances of attribute with value/destination: " + Description.getFormattedConcept(targetSCTID),
+				"");
+
+	}
+
+	/**
+	 * 
+	 * @param stripOff
+	 *            - The term to strip off
+	 * @param primaryHierarchy
+	 *            - the hierarchy in which to find the words used in the search
+	 * @param secondaryHierarchy
+	 *            - the hierarchy in which to search
+	 */
+	public void textualSubstringMatch(String stripOff, Long primaryHierarchy, Long secondaryHierarchy, CHARACTERISTIC currentView) {
+		Concept startingPoint = Concept.getConcept(primaryHierarchy, currentView);
+		int searchesAttempted = 0;
+		for (Concept thisConcept : startingPoint.getDescendents(Concept.DEPTH_NOT_SET, false)) {
+			String fsn = Description.getDescription(thisConcept);
+			if (fsn.contains(stripOff)) {
+				String pt = fsn.replaceAll("\\(.*\\)", "");
+				pt = pt.replace(stripOff, "").replace("- ", "");
+				String[] searchTerms = pt.split(" ");
+				// Now find all OTHER concepts within this hierarchy that contain those words
+				Concept searchingPoint = Concept.getConcept(primaryHierarchy, currentView);
+				matchAllWords(searchTerms, searchingPoint, thisConcept, stripOff);
+				searchesAttempted++;
+			}
+		}
+		print("Completed searches of matches to " + searchesAttempted + " concepts", "");
+	}
+
+	private void matchAllWords(String[] searchTerms, Concept searchingPoint, Concept sourceConcept, String strippedTerm) {
+		boolean firstFound = false;
+		String leafNodeIndicator = sourceConcept.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY, false).size() > 0 ? "" : "* ";
+		for (Concept thisConcept : searchingPoint.getDescendents(Concept.DEPTH_NOT_SET, false)) {
+			String thisDescription = Description.getDescription(thisConcept);
+			// Don't match the source for this search process or terms including the term we're stripping
+			if (thisConcept.equals(sourceConcept) || thisDescription.contains(strippedTerm)) {
+				continue;
+			}
+
+			boolean containsAllTerms = true;
+			for (String thisWord : searchTerms) {
+				if (!thisDescription.contains(" " + thisWord + " ")) {
+					containsAllTerms = false;
+				}
+			}
+
+			if (containsAllTerms) {
+				firstFound = true;
+				print(leafNodeIndicator + Description.getFormattedConcept(sourceConcept.getSctId()) + " exists in "
+						+ Description.getFormattedConcept(thisConcept.getSctId()), "");
+			}
+		}
+
+		if (!firstFound) {
+			// print(leafNodeIndicator + Description.getFormattedConcept(sourceConcept.getSctId()) + " no matches found", "");
+		}
+	}
+	
 }
