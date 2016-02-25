@@ -4,7 +4,7 @@
 
 	<groupId>org.ihtsdo.snomed.util</groupId>
 	<artifactId>snomed-utilities</artifactId>
-	<version>1.0.9</version>
+	<version>1.1</version>
 	<name>SNOMED CT Utilities</name>
 
 	<licenses>
@@ -32,6 +32,21 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-beans</artifactId>
 			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.5</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>19.0-rc2</version>
 		</dependency>
 		<!-- Logging -->
 		<dependency>
@@ -85,7 +100,36 @@
 			</plugins>
 		</pluginManagement>
 	</build>
+	
+	<!-- Profile to construct a jar including dependencies for stand alone execution -->
+	<profiles>
+		<profile>
+			<id>stand-alone</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-shade-plugin</artifactId>
+						<version>2.4</version>
+						<executions>
+							<execution>
+								<phase>package</phase>
+								<goals>
+									<goal>shade</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<finalName>uber-${project.artifactId}-${project.version}</finalName>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>	
+	</profiles>
 
+	
+	
 	<repositories>
 		<repository>
 			<id>ihtsdo-public-nexus</id>
