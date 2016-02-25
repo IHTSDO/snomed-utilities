@@ -1,4 +1,4 @@
-Snomed Utilities
+Snomed Utilities [![Build Status](https://travis-ci.org/IHTSDO/snomed-utilities.svg?branch=master)](https://travis-ci.org/IHTSDO/snomed-utilities)
 ================
 
 Java libraries for applications working with SNOMED CT.
