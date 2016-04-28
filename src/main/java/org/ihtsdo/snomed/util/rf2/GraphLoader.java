@@ -11,7 +11,9 @@ import java.util.regex.Pattern;
 
 import org.ihtsdo.snomed.util.pojo.Concept;
 import org.ihtsdo.snomed.util.pojo.Description;
+import org.ihtsdo.snomed.util.pojo.RF1Relationship;
 import org.ihtsdo.snomed.util.pojo.Relationship;
+import org.ihtsdo.snomed.util.rf2.schema.RF1SchemaConstants;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,14 +25,16 @@ import org.slf4j.LoggerFactory;
  * @author PGWilliams
  * 
  */
-public class GraphLoader implements RF2SchemaConstants {
+public class GraphLoader implements RF2SchemaConstants, RF1SchemaConstants {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
-
+	private static GraphLoader singletonGraphLoader = null;
+	
 	private final String conceptFile;
 	private final String statedFile;
 	private final String inferredFile;
 	private final String descriptionFile;
+	private final String qualifyingFile;
 	private String releaseDate;
 
 	private final Long SNOMED_ROOT_CONCEPT = 138875005L;
@@ -39,12 +43,24 @@ public class GraphLoader implements RF2SchemaConstants {
 
 	private Map<String, Relationship> statedRelationships;
 	private Map<String, Relationship> inferredRelationships;
+	private Map<String, Relationship> qualifyingRelationships;
 
-	public GraphLoader(String conceptFile, String statedFile, String inferredFile, String descriptionFile) {
+	private GraphLoader(String conceptFile, String statedFile, String inferredFile, String descriptionFile, String qualifyingFile) {
 		this.conceptFile = conceptFile;
 		this.statedFile = statedFile;
 		this.inferredFile = inferredFile;
 		this.descriptionFile = descriptionFile;
+		this.qualifyingFile = qualifyingFile;
+	}
+	
+	public static void createGraphLoader(String conceptFile, String statedFile, String inferredFile, String descriptionFile, String qualifyingFile) {
+		if (singletonGraphLoader == null) {
+			singletonGraphLoader = new GraphLoader(conceptFile, statedFile, inferredFile, descriptionFile, qualifyingFile);
+		}
+	}
+	
+	public static GraphLoader get() {
+		return singletonGraphLoader;
 	}
 
 	public void loadRelationships() throws Exception {
@@ -62,6 +78,11 @@ public class GraphLoader implements RF2SchemaConstants {
 
 		LOGGER.debug("Loading Description File: {}", descriptionFile);
 		loadDescriptionFile(descriptionFile);
+		
+		//WE'll add Qualifying Relationships into the Inferred Hierarchy, since they don't 
+		//define a connected graph on their own
+		LOGGER.debug("Loading Qualifying File: {}", qualifyingFile);
+		qualifyingRelationships = loadRF1RelationshipFile(qualifyingFile, CHARACTERISTIC.INFERRED);
 
 		LOGGER.debug("Populating inferred hierarchy depth");
 		Concept hierarchyRoot = Concept.getConcept(SNOMED_ROOT_CONCEPT, CHARACTERISTIC.INFERRED);
@@ -69,7 +90,17 @@ public class GraphLoader implements RF2SchemaConstants {
 
 		LOGGER.debug("Loading complete");
 	}
-
+	
+	
+	public Map<String, Relationship> getRelationships(CHARACTERISTIC characteristic) throws Exception {
+		switch (characteristic) {
+		case STATED: return statedRelationships;
+		case INFERRED: return inferredRelationships;
+		case QUALIFYING: return qualifyingRelationships;
+		default: 
+			throw new Exception ("Unrecognised Characteristic: " + characteristic);
+		}
+	}
 
 	private String determineReleaseDate(String filePath) throws Exception {
 		// Might have a date in the directory path, so trim to filename
@@ -102,7 +133,6 @@ public class GraphLoader implements RF2SchemaConstants {
 			String line;
 			boolean isFirstLine = true;
 			while ((line = br.readLine()) != null) {
-
 				if (!isFirstLine) {
 					String[] lineItems = line.split(FIELD_DELIMITER);
 					// Only store active relationships
@@ -118,7 +148,31 @@ public class GraphLoader implements RF2SchemaConstants {
 					isFirstLine = false;
 					continue;
 				}
-
+			}
+		}
+		return loadedRelationships;
+	}
+	
+	private Map<String, Relationship> loadRF1RelationshipFile(String filePath, CHARACTERISTIC characteristic)
+			throws Exception {
+		// Does this file exist and not as a directory?
+		File file = getFile(filePath);
+		Map<String, Relationship> loadedRelationships = new HashMap<String, Relationship>();
+		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+			String line;
+			boolean isFirstLine = true;
+			while ((line = br.readLine()) != null) {
+				if (!isFirstLine) {
+					String[] lineItems = line.split(FIELD_DELIMITER);
+					// All rows are active in RF1
+					if (lineItems[RF1_REL_IDX_CHARACTERISTICTYPE].equals(RF1_CHARACTERISTIC_TYPE_QUALIFIER)) {
+						Relationship r = new RF1Relationship(lineItems, characteristic);
+						loadedRelationships.put(r.getUuid(), r);
+					}
+				} else {
+					isFirstLine = false;
+					continue;
+				}
 			}
 		}
 		return loadedRelationships;

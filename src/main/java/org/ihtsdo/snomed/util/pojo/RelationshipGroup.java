@@ -59,7 +59,7 @@ public class RelationshipGroup {
 			for (int x = 0; x < attributeList.size(); x++) {
 				Relationship r = attributeList.get(x);
 				if (indexCombination.contains(x)) {
-					typesConcatonated += r.getType().getAncestor(IMMEDIATE_PARENT).getSctId(); // just immediate parent
+					typesConcatonated += r.getTypeConcept().getAncestor(IMMEDIATE_PARENT).getSctId(); // just immediate parent
 				} else {
 					typesConcatonated += r.getTypeId();
 				}
@@ -107,7 +107,7 @@ public class RelationshipGroup {
 				Relationship r = attributeList.get(x);
 				if (thisAttributeCombination.contains(x)) {
 					if (thisAbstractCombination.contains(x)) {
-						typesConcatonated += r.getType().getAncestor(IMMEDIATE_PARENT).getSctId();
+						typesConcatonated += r.getTypeConcept().getAncestor(IMMEDIATE_PARENT).getSctId();
 					} else {
 						typesConcatonated += r.getTypeId();
 					}
@@ -135,7 +135,7 @@ public class RelationshipGroup {
 	public Set<Concept> getAttributeTypes() {
 		Set<Concept> attributeTypes = new HashSet<Concept>();
 		for (Relationship thisAttribute : attributes) {
-			attributeTypes.add(thisAttribute.getType());
+			attributeTypes.add(thisAttribute.getTypeConcept());
 		}
 		return attributeTypes;
 	}

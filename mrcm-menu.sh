@@ -31,7 +31,7 @@ done
 echo
 echo "Interactive MRCM"
 echo
-default="/Users/Peter/tmp/20150731_flat"
+default="/Users/Peter/tmp/20160131_flat"
 read -p "Where are your snapshot SNOMED files (? [${default}] " sourceDir
 if [ -z "${sourceDir}" ]
 then
@@ -65,6 +65,7 @@ java -Xms4g -Xmx5g -enableassertions -classpath ${executable}  org.ihtsdo.snomed
 ${sourceDir}/sct2_Concept_Snapshot_INT_${effectiveTime}.txt \
 ${sourceDir}/sct2_StatedRelationship_Snapshot_INT_${effectiveTime}.txt \
 ${sourceDir}/sct2_Relationship_Snapshot_INT_${effectiveTime}.txt \
-${sourceDir}/sct2_Description_Snapshot-en_INT_${effectiveTime}.txt 
+${sourceDir}/sct2_Description_Snapshot-en_INT_${effectiveTime}.txt \
+/Users/Peter/tmp/20160131_rf1_flat/sct1_Relationships_Core_INT_20160131.txt 
 
 

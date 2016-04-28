@@ -2,14 +2,17 @@ package org.ihtsdo.snomed.util.mrcm;
 
 import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.commons.math3.stat.StatUtils;
@@ -21,6 +24,7 @@ import org.ihtsdo.snomed.util.pojo.GroupShape;
 import org.ihtsdo.snomed.util.pojo.GroupsHash;
 import org.ihtsdo.snomed.util.pojo.Relationship;
 import org.ihtsdo.snomed.util.pojo.RelationshipGroup;
+import org.ihtsdo.snomed.util.pojo.TypeDestination;
 import org.ihtsdo.snomed.util.rf2.GraphLoader;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.CHARACTERISTIC;
 import org.ihtsdo.util.CollectionUtils;
@@ -310,7 +314,7 @@ public class MrcmBuilder {
 
 	private void populateAllAttributeTypes(Concept parent, Set<Concept> allAttributeTypes) {
 		for (Relationship thisRelationship : parent.getAllAttributes()) {
-			allAttributeTypes.add(thisRelationship.getType());
+			allAttributeTypes.add(thisRelationship.getTypeConcept());
 		}
 
 		for (Concept thisChild : parent.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY, false)) {
@@ -397,7 +401,7 @@ public class MrcmBuilder {
 					continue;
 				}
 				for (Relationship statedRelationship : statedRelationshipGroup.getAttributes()) {
-					if (inferredRelationship.getType().equals(statedRelationship.getType())
+					if (inferredRelationship.getTypeConcept().equals(statedRelationship.getTypeConcept())
 							&& inferredRelationship.getDestinationConcept().equals(statedRelationship.getDestinationConcept())) {
 						return true;
 					}
@@ -465,11 +469,11 @@ public class MrcmBuilder {
 	private boolean matchGroups(Set<Relationship> thisCombination, RelationshipGroup thisParentGroup, int relaxationLevel) {
 		for (Relationship thisAttribute : thisCombination) {
 			// Now cast our net to the required width for matching on type and destination
-			Set<Concept> matchType = widenNet(thisAttribute.getType(), relaxationLevel);
+			Set<Concept> matchType = widenNet(thisAttribute.getTypeConcept(), relaxationLevel);
 			Set<Concept> matchDestination = widenNet(thisAttribute.getDestinationConcept(), relaxationLevel);
 			boolean thisMatch = false;
 			for (Relationship parentAttribute : thisParentGroup.getAttributes()) {
-				if (matchType.contains(parentAttribute.getType()) && matchDestination.contains(parentAttribute.getDestinationConcept())) {
+				if (matchType.contains(parentAttribute.getTypeConcept()) && matchDestination.contains(parentAttribute.getDestinationConcept())) {
 					thisMatch = true;
 					break;
 				}
@@ -514,7 +518,7 @@ public class MrcmBuilder {
 				boolean blameElsewhere = false;
 				String errorReport = "";
 				// If this attribute type is an ancestor of the parent type, then we have a crossover
-				if (thisParentsAttribute.getType().equals(thisAttribute.getType())) {
+				if (thisParentsAttribute.getTypeConcept().equals(thisAttribute.getTypeConcept())) {
 					// but if it's the same, then check if the destination is an ancestor.
 					if (thisParentsAttribute.getDestinationConcept().getAncestors(Concept.DEPTH_NOT_SET)
 							.contains(thisAttribute.getDestinationConcept())) {
@@ -527,12 +531,12 @@ public class MrcmBuilder {
 						errorReport += ("\n\tMore specific parent's destination " + Description.getFormattedConcept(thisParentsAttribute
 								.getDestinationConcept().getSctId()));
 					}
-				} else if (thisParentsAttribute.getType().getAncestors(Concept.DEPTH_NOT_SET).contains(thisAttribute.getType())) {
+				} else if (thisParentsAttribute.getTypeConcept().getAncestors(Concept.DEPTH_NOT_SET).contains(thisAttribute.getTypeConcept())) {
 					// OR is it the case that this type is actually coming from one of the other parents?
 
 					for (Concept parent : thisConcept.getParents()) {
 						for (Relationship parentAttribute : parent.getGroup(parentGroupId)) {
-							if (parentAttribute.getType().equals(thisAttribute.getType())) {
+							if (parentAttribute.getTypeConcept().equals(thisAttribute.getTypeConcept())) {
 								blameElsewhere = true;
 							}
 						}
@@ -542,8 +546,8 @@ public class MrcmBuilder {
 						status = CROSSOVER_STATUS.TYPE_CROSSOVER;
 						errorReport += (Description.getFormattedConcept(thisConcept.getSctId()) + " group " + groupId + " - " + status);
 						errorReport += ("\n\tParent: " + Description.getFormattedConcept(thisParent.getSctId()) + " group " + parentGroupId);
-						errorReport += ("\n\tAttribute type " + Description.getFormattedConcept((thisAttribute.getType().getSctId())));
-						errorReport += ("\n\tMore specific parent's type " + Description.getFormattedConcept(thisParentsAttribute.getType()
+						errorReport += ("\n\tAttribute type " + Description.getFormattedConcept((thisAttribute.getTypeConcept().getSctId())));
+						errorReport += ("\n\tMore specific parent's type " + Description.getFormattedConcept(thisParentsAttribute.getTypeConcept()
 								.getSctId()));
 					}
 				}
@@ -755,7 +759,7 @@ public class MrcmBuilder {
 			}
 			for (Relationship comparisonAttribute : thisGroup.getAttributes()) {
 				if (thisAttribute.getTypeId().equals(comparisonAttribute.getTypeId()) || (
-						includeDescendants == true && thisAttribute.getType().getParents().contains(comparisonAttribute.getType()))){
+						includeDescendants == true && thisAttribute.getTypeConcept().getParents().contains(comparisonAttribute.getTypeConcept()))){
 					if (!thisAttribute.getDestinationId().equals(comparisonAttribute.getDestinationId())) {
 						print ("Found duplicate attribute types in concept: " + Description.getFormattedConcept(thisAttribute.getSourceId()),"");
 						print(thisAttribute.toPrettyString(), "");
@@ -858,6 +862,88 @@ public class MrcmBuilder {
 		if (!firstFound) {
 			// print(leafNodeIndicator + Description.getFormattedConcept(sourceConcept.getSctId()) + " no matches found", "");
 		}
+	}
+
+	/**
+	 * Method:	Get list of all qualifying relationships
+	 *			Group them into type/destination 
+	 *			For each type/destination see if there's a common parent
+	 *			If the parent is too high, find clusters of sub-hierarchies
+	 *			Given the sub hierarchies, detect Exceptions who do not possess that attribute
+	 * @throws Exception 
+	 */
+	public void reverseEngineerQualifyingRules() throws Exception {
+		print ("Reverse Engineering Qualifying Rules","");
+		Map<TypeDestination, List<Relationship>> qrGroup = groupQualifyingRelationships();
+		for (Map.Entry<TypeDestination, List<Relationship>> thisEntry : qrGroup.entrySet()) {
+			TypeDestination td = thisEntry.getKey();
+			List<Relationship> rels = thisEntry.getValue();
+			print (td.toString() +  " - " + rels.size(), "");
+			determineQualifyingRuleDomains(td, rels);
+		}
+	}
+
+	private void determineQualifyingRuleDomains(TypeDestination td,
+			List<Relationship> rels) {
+		Set<Concept> sourceConcepts = extractSourceConcepts(rels);
+		//What's the common ancestor?
+		Concept commonAncestor = null;
+		if (sourceConcepts.size() > 1) {
+			commonAncestor = findCommonAncestor(sourceConcepts);
+			print ("Common ancestor: " + Description.getFormattedConcept(commonAncestor.getSctId()), "   ");
+		} else {
+			commonAncestor = sourceConcepts.toArray(new Concept[0])[0];
+			print ("Single: " + Description.getFormattedConcept(commonAncestor.getSctId()),"   ");
+		}
+		Set<Concept> exceptions = determineQualifyingExceptions(sourceConcepts, commonAncestor);
+		print ("Exceptions: " + exceptions.size(), "   ");
+		
+	}
+
+	/**
+	 * @return The set of descendents of the commonAncestor which do not feature the Qualifying attributes
+	 */
+	private Set<Concept> determineQualifyingExceptions(
+			Set<Concept> sourceConcepts, Concept commonAncestor) {
+		Set<Concept> exceptions = commonAncestor.getAllDescendents(Concept.DEPTH_NOT_SET);
+		exceptions.removeAll(sourceConcepts);
+		//Where an exception has no descendents that have the qualifying attribute, we can ignore them.
+		Set<Concept> exceptionDriver = new HashSet<Concept>(exceptions);
+		for (Concept thisException : exceptionDriver) {
+			//If we've already removed this exception from the list, no need to process
+			if (!exceptions.contains(thisException)) {
+				continue;
+			}
+			Set<Concept> exceptionDescendents = thisException.getAllDescendents(Concept.DEPTH_NOT_SET);
+			if (Collections.disjoint(exceptionDescendents, sourceConcepts)) {
+				exceptions.removeAll(exceptionDescendents);
+			}
+		}
+		return exceptions;
+	}
+
+	private Set<Concept> extractSourceConcepts(List<Relationship> rels) {
+		Set<Concept> concepts = new HashSet<Concept> ();
+		for (Relationship r : rels) {
+			concepts.add(r.getSourceConcept());
+		}
+		return concepts;
+	}
+
+	private Map<TypeDestination, List<Relationship>> groupQualifyingRelationships() throws Exception {
+		Map<TypeDestination, List<Relationship>> groups = new TreeMap<TypeDestination, List<Relationship>>();
+		for (Relationship r : GraphLoader.get().getRelationships(CHARACTERISTIC.QUALIFYING).values()){
+			TypeDestination thisTD = new TypeDestination(r.getTypeConcept(), r.getDestinationConcept());
+			List<Relationship> thisGroupList = null;
+			if (groups.containsKey(thisTD)) {
+				thisGroupList = groups.get(thisTD);
+			} else {
+				thisGroupList = new ArrayList<Relationship>();
+				groups.put(thisTD, thisGroupList);
+			}
+			thisGroupList.add(r);
+		}
+		return groups;
 	}
 	
 }

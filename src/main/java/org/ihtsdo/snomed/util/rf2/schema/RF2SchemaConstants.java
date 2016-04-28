@@ -48,6 +48,6 @@ public interface RF2SchemaConstants {
 	public static final String FULLY_SPECIFIED_NAME = "900000000000003001";
 
 	public static enum CHARACTERISTIC {
-		STATED, INFERRED, ADDITIONAL
+		STATED, INFERRED, ADDITIONAL, QUALIFYING
 	};
 }

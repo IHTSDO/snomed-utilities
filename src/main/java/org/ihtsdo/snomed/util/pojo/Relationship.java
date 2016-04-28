@@ -5,7 +5,7 @@ import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
 
 public class Relationship implements Comparable<Relationship>, RF2SchemaConstants {
 
-	private static Type5UuidFactory type5UuidFactory;
+	protected static Type5UuidFactory type5UuidFactory;
 	static {
 		try {
 			type5UuidFactory = new Type5UuidFactory();
@@ -14,13 +14,12 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 		}
 	}
 
-	// private String[] lineValues;
-	private Concept sourceConcept;
-	private Concept destinationConcept;
-	private Long typeId;
-	private String uuid;
-	private int group;
-	private boolean active;
+	protected Concept sourceConcept;
+	protected Concept destinationConcept;
+	protected Long typeId;
+	protected String uuid;
+	protected int group;
+	protected boolean active;
 	boolean changedThisRelease = false;
 
 	// Was originally splitting the string in the constructor, but expensive to create object
@@ -36,6 +35,8 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 		destinationConcept = Concept.registerConcept(lineValues[REL_IDX_DESTINATIONID], characteristic);
 		sourceConcept.addAttribute(this);
 	}
+	
+	protected Relationship(){}
 
 	boolean isISA() {
 		return typeId.equals(ISA_ID);
@@ -125,7 +126,7 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 		return this.group == group;
 	}
 
-	public Concept getType() {
+	public Concept getTypeConcept() {
 		return Concept.getConcept(this.typeId, CHARACTERISTIC.INFERRED);
 	}
 

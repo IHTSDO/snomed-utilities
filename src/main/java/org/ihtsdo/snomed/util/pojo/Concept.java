@@ -104,6 +104,11 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 		}
 		return false;
 	}
+	
+	@Override
+	public int hashCode() {
+		return getSctId().toString().hashCode();
+	}
 
 	public Long getSctId() {
 		return sctId;
@@ -213,5 +218,22 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	public Set<Relationship> getGroup(int i) {
 		return groups.size() > i ? groups.get(i).getAttributes() : new HashSet<Relationship>();
 	}
+
+	public Set<Concept> getAllDescendents(int depth) {
+		Set<Concept> allDescendents = new HashSet<Concept>();
+		this.populateAllDescendents(allDescendents, depth);
+		return allDescendents;
+	}
+	
+	private void populateAllDescendents(Set<Concept> descendents, int depth) {
+		for (Concept thisChild : children) {
+			descendents.add(thisChild);
+			if (depth == DEPTH_NOT_SET || depth > 1) {
+				int newDepth = depth == DEPTH_NOT_SET ? DEPTH_NOT_SET : depth - 1;
+				thisChild.populateAllDescendents(descendents, newDepth);
+			}
+		}
+	}
+
 
 }

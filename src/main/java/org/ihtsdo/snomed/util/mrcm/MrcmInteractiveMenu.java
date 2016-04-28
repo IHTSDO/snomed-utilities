@@ -17,17 +17,17 @@ public class MrcmInteractiveMenu {
 	private static CHARACTERISTIC currentView = CHARACTERISTIC.INFERRED;
 
 	private static void doHelp() {
-		LOGGER.info("Usage: <concept file location> <stated relationship file location> <inferred realtionship file location> <description file location>");
+		LOGGER.info("Usage: <concept file location> <stated relationship file location> <inferred realtionship file location> <description file location> <rf1 qualifying relationships>");
 		System.exit(-1);
 	}
 
 	public static void main(String[] args) throws Exception {
-		if (args.length < 3) {
+		if (args.length < 4) {
 			doHelp();
 		}
 		reportMemory();
-		GraphLoader g = new GraphLoader(args[0], args[1], args[2], args[3]);
-		g.loadRelationships();
+		GraphLoader.createGraphLoader(args[0], args[1], args[2], args[3], args[4]);
+		GraphLoader.get().loadRelationships();
 		reportMemory();
 
 		new MrcmInteractiveMenu().start();
@@ -41,6 +41,9 @@ public class MrcmInteractiveMenu {
 				displayMenu();
 				String functionChosen = in.nextLine().trim();
 				switch (functionChosen) {
+					case "1" : 
+						new MrcmBuilder().reverseEngineerQualifyingRules();
+						break;
 					case "a":
 						printn("Look at which hierarchy? ");
 						String hierarchySCTID = in.nextLine().trim();
@@ -136,6 +139,7 @@ public class MrcmInteractiveMenu {
 		print("\n");
 		print("     Menu  - " + currentView + " view");
 		print("---------------------------------------");
+		print("1 - Reverse Engineer RF1 Qualifying Relationship Rules");
 		print("a - LCA of all attribute values");
 		print("c - find examples of crossovers");
 		print("d - get mrcm for decendents of concept");
