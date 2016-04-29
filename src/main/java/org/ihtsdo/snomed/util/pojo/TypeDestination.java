@@ -2,6 +2,14 @@ package org.ihtsdo.snomed.util.pojo;
 
 public class TypeDestination implements Comparable<TypeDestination>{
 	
+	public Concept getType() {
+		return type;
+	}
+
+	public Concept getDestination() {
+		return destination;
+	}
+
 	private Concept type;
 	private Concept destination;
 	private int hash;

@@ -170,7 +170,7 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	}
 
 	public String toString() {
-		return Long.toString(sctId);
+		return Description.getFormattedConcept(sctId);
 	}
 
 	public Collection<Relationship> getAllAttributes() {

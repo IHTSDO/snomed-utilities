@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
@@ -27,7 +28,7 @@ import org.ihtsdo.snomed.util.pojo.RelationshipGroup;
 import org.ihtsdo.snomed.util.pojo.TypeDestination;
 import org.ihtsdo.snomed.util.rf2.GraphLoader;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.CHARACTERISTIC;
-import org.ihtsdo.util.CollectionUtils;
+import org.ihtsdo.util.SnomedCollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,9 @@ public class MrcmBuilder {
 	private static String INDENT_0 = "";
 	private static String INDENT_1 = "\t";
 	private static int MAX_MATCH_RELAXATION = 3;
+	private static int MAX_EXCEPTIONS = 30;
+	
+	long qualifierIgnore = 182353008;  //Ignore Side ie laterality as we'll pull that from Yong's spreadsheet.
 
 	private static enum CROSSOVER_STATUS {
 		NOT_CROSSOVER, TYPE_CROSSOVER, DESTINATION_CROSSOVER
@@ -100,7 +104,7 @@ public class MrcmBuilder {
 				String preferredShapeId = g.getGroupBasicShape().getId();
 				Set<Integer> preferredAbstractCombination = null;
 				// Loop through all the combinations of attributes to express as type ancestors
-				Set<Set<Integer>> allCombinations = CollectionUtils.getIndexCombinations(g.size());
+				Set<Set<Integer>> allCombinations = SnomedCollectionUtils.getIndexCombinations(g.size());
 				for (Set<Integer> thisCombination : allCombinations) {
 					// Skip the empty set ie no abstractions
 					if (thisCombination.size() == 0) {
@@ -136,7 +140,7 @@ public class MrcmBuilder {
 			List<RelationshipGroup> groups = sibling.getGroups();
 			for (RelationshipGroup g : groups) {
 				// Loop through all the combinations of attributes
-				Set<Set<Integer>> allCombinations = CollectionUtils.getIndexCombinations(g.size());
+				Set<Set<Integer>> allCombinations = SnomedCollectionUtils.getIndexCombinations(g.size());
 				for (Set<Integer> thisCombination : allCombinations) {
 					// Skip the empty set ie no attributes in group
 					if (thisCombination.size() == 0) {
@@ -161,7 +165,7 @@ public class MrcmBuilder {
 			List<RelationshipGroup> groups = sibling.getGroups();
 			for (RelationshipGroup g : groups) {
 				// Loop through all the combinations of attributes
-				Set<Set<Integer>> allAttributeCombinations = CollectionUtils.getIndexCombinations(g.size());
+				Set<Set<Integer>> allAttributeCombinations = SnomedCollectionUtils.getIndexCombinations(g.size());
 				for (Set<Integer> thisAttributeCombination : allAttributeCombinations) {
 					// Skip the empty set ie no attributes in group
 					if (thisAttributeCombination.size() == 0) {
@@ -898,6 +902,112 @@ public class MrcmBuilder {
 		Set<Concept> exceptions = determineQualifyingExceptions(sourceConcepts, commonAncestor);
 		print ("Exceptions: " + exceptions.size(), "   ");
 		
+		if (td.getDestination().getSctId().equals(qualifierIgnore)) {
+			print ("Marked to ignore for now","   ");
+			return;
+		}
+		
+		if (exceptions.size() > rels.size() || exceptions.size() > MAX_EXCEPTIONS) {
+			//Lets try a bottom up approach instead
+			determineQualifyingRuleDomainStartPoints(td, sourceConcepts);
+		}
+		
+	}
+
+	private void determineQualifyingRuleDomainStartPoints(TypeDestination td,
+			Set<Concept> conceptsWithQrAttribute) {
+		Set<Concept> remaining = new TreeSet<Concept>(conceptsWithQrAttribute);
+		while (remaining.size() > 0) {
+			Concept deepestConcept = getDeepestConcept(remaining);
+			Concept currentPosition = deepestConcept;
+			//Do any of my parents also feature this Qualifying Relationship?  
+			//Move up and remove all descendents of the parent if so.
+			Collection<Concept> intersection = null;
+			do {
+				intersection = org.apache.commons.collections.CollectionUtils.intersection(currentPosition.getParents(), remaining);
+				Concept bestParent = null;
+				if (intersection.size() > 1) {
+					//print ("Warning at " + Description.getFormattedConcept(currentPosition.getSctId()) + " has multiple parents with Qualifying attribute.","     ");
+					//have a peek at all parents to see which ones also feature the Qualifying Relationship.
+					Collection<Concept> preview;
+					for (Concept thisParent : intersection) {
+						preview = org.apache.commons.collections.CollectionUtils.intersection(thisParent.getParents(), remaining);
+						if (preview.size() > 0) {
+							if (bestParent != null) {
+								print (currentPosition + " has multiple matching parents: " + bestParent + " and " + thisParent, "      ");
+							}
+							bestParent = thisParent;
+						}
+					}
+				} else if (intersection.size() > 0) {
+					bestParent = intersection.iterator().next();
+				}
+				
+				if (bestParent != null) {
+					currentPosition = bestParent;
+					//And remove everything down from here as covered under this parent
+					remaining.removeAll(currentPosition.getAllDescendents(Concept.DEPTH_NOT_SET));
+					
+					//Work out the exceptions at each level - which of the children should NOT have this attribute?
+					Set<Concept> children = currentPosition.getAllDescendents(Concept.IMMEDIATE_CHILDREN_ONLY);
+					Collection<Concept> exceptions = CollectionUtils.subtract(children, conceptsWithQrAttribute);
+					if (!exceptions.isEmpty()) {
+						print (currentPosition + " " + exceptions.size() + " exceptions.", "       ");
+					}
+				}
+			} while (intersection.size() > 0);
+			//Once we've finished working up the tree, this is our highest point for this rule
+			
+			//Can we go one higher to capture our siblings and do a "Descendents" rule without too many exceptions?
+			currentPosition = checkOneLevelHigherQualifyingRelationships(currentPosition, conceptsWithQrAttribute);
+			Set<Concept> desc = currentPosition.getAllDescendents(Concept.DEPTH_NOT_SET);
+			
+			print ("Rule start point at: " + Description.getFormattedConcept(currentPosition.getSctId()) + " - " + desc.size(), "    ");
+			
+			//So we can also remove this one from our list, and its descendents if we went one higher
+			remaining.remove(currentPosition);
+			remaining.removeAll(desc);
+		}
+		
+	}
+
+	/** 
+	 * Although we know the parent doesn't feature the attribute, check if more
+	 * of it's children do than don't.  In whcih case it's a better option.
+	 */
+	private Concept checkOneLevelHigherQualifyingRelationships(
+			Concept currentPosition, Set<Concept> conceptsWithQrAttribute) {
+		Concept bestMatch = currentPosition;  //If we don't get a positive score, stay where we are
+		Set<Concept> oneLevelHigher = currentPosition.getParents();
+		int bestScore = 0; //Score here is number matching minus number not matching ie exceptions
+		int matchHits = 0;
+		int matchMisses = 0;
+		for (Concept thisParent : oneLevelHigher) {
+			Set<Concept> children = thisParent.getAllDescendents(Concept.IMMEDIATE_CHILDREN_ONLY);
+			Collection<Concept> hasQRel = CollectionUtils.intersection(children, conceptsWithQrAttribute);
+			Collection<Concept> noQRel  = CollectionUtils.subtract(children, conceptsWithQrAttribute);
+			int score = hasQRel.size() - noQRel.size();
+			if (score > 0 && score > bestScore) {
+				bestScore = score;
+				bestMatch = thisParent;
+				matchHits = hasQRel.size();
+				matchMisses = noQRel.size();
+			}
+		}
+		if (!bestMatch.equals(currentPosition)) {
+			print (currentPosition + " moved to next higher start point " + bestMatch + " [" + matchHits + "/" + matchMisses +"]", "   ");
+		}
+		return bestMatch;
+	}
+
+	private Concept getDeepestConcept(Set<Concept> concepts) {
+		Concept deepestConcept = null;
+		for (Concept thisConcept : concepts) {
+			if (deepestConcept == null || thisConcept.getDepth() > deepestConcept.getDepth()) {
+				deepestConcept = thisConcept;
+			}
+		}
+		return deepestConcept;
 	}
 
 	/**

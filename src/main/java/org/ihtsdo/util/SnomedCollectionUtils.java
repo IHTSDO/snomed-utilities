@@ -5,7 +5,7 @@ import java.util.TreeSet;
 
 import com.google.common.collect.Sets;
 
-public class CollectionUtils {
+public class SnomedCollectionUtils {
 
 	/**
 	 * Return a set containing every combination of indexes for a given sized collection
