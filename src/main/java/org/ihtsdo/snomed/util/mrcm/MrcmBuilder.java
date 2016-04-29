@@ -1,12 +1,17 @@
 package org.ihtsdo.snomed.util.mrcm;
 
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,20 +25,25 @@ import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.ihtsdo.snomed.util.pojo.Concept;
+import org.ihtsdo.snomed.util.pojo.ConceptSerializer;
 import org.ihtsdo.snomed.util.pojo.Description;
 import org.ihtsdo.snomed.util.pojo.GroupShape;
 import org.ihtsdo.snomed.util.pojo.GroupsHash;
+import org.ihtsdo.snomed.util.pojo.QualifyingRelationshipRule;
 import org.ihtsdo.snomed.util.pojo.Relationship;
 import org.ihtsdo.snomed.util.pojo.RelationshipGroup;
-import org.ihtsdo.snomed.util.pojo.TypeDestination;
+import org.ihtsdo.snomed.util.pojo.QualifyingRelationshipAttribute;
 import org.ihtsdo.snomed.util.rf2.GraphLoader;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.CHARACTERISTIC;
+import org.ihtsdo.snomed.util.rf2.schema.SnomedExpressions.CONSTRAINT;
 import org.ihtsdo.util.SnomedCollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class MrcmBuilder {
 
@@ -878,16 +888,28 @@ public class MrcmBuilder {
 	 */
 	public void reverseEngineerQualifyingRules() throws Exception {
 		print ("Reverse Engineering Qualifying Rules","");
-		Map<TypeDestination, List<Relationship>> qrGroup = groupQualifyingRelationships();
-		for (Map.Entry<TypeDestination, List<Relationship>> thisEntry : qrGroup.entrySet()) {
-			TypeDestination td = thisEntry.getKey();
+		Map<QualifyingRelationshipAttribute, List<Relationship>> qrGroup = groupQualifyingRelationships();
+		for (Map.Entry<QualifyingRelationshipAttribute, List<Relationship>> thisEntry : qrGroup.entrySet()) {
+			QualifyingRelationshipAttribute td = thisEntry.getKey();
 			List<Relationship> rels = thisEntry.getValue();
 			print (td.toString() +  " - " + rels.size(), "");
 			determineQualifyingRuleDomains(td, rels);
 		}
+		
+		//Now output the Attributes with Rules and Exceptions to a JSON file
+		SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
+		String filename = "qr-rules_" + df.format(new Date()) + ".json";
+		try(Writer writer = new OutputStreamWriter(new FileOutputStream(filename) , "UTF-8")){
+			Gson gson = new GsonBuilder()
+							.setPrettyPrinting()
+							.registerTypeAdapter(Concept.class, new ConceptSerializer())
+							.create();
+			Set<QualifyingRelationshipAttribute> allAttributeRules = qrGroup.keySet();
+			gson.toJson(allAttributeRules, writer);
+		}
 	}
 
-	private void determineQualifyingRuleDomains(TypeDestination td,
+	private void determineQualifyingRuleDomains(QualifyingRelationshipAttribute qra,
 			List<Relationship> rels) {
 		Set<Concept> sourceConcepts = extractSourceConcepts(rels);
 		//What's the common ancestor?
@@ -902,24 +924,28 @@ public class MrcmBuilder {
 		Set<Concept> exceptions = determineQualifyingExceptions(sourceConcepts, commonAncestor);
 		print ("Exceptions: " + exceptions.size(), "   ");
 		
-		if (td.getDestination().getSctId().equals(qualifierIgnore)) {
+		if (qra.getDestination().getSctId().equals(qualifierIgnore)) {
 			print ("Marked to ignore for now","   ");
 			return;
 		}
 		
 		if (exceptions.size() > rels.size() || exceptions.size() > MAX_EXCEPTIONS) {
 			//Lets try a bottom up approach instead
-			determineQualifyingRuleDomainStartPoints(td, sourceConcepts);
+			determineQualifyingRuleDomainStartPoints(qra, sourceConcepts);
+		} else {
+			QualifyingRelationshipRule newRule = new QualifyingRelationshipRule(commonAncestor, CONSTRAINT.DESCENDENT_OR_SELF, exceptions);
+			qra.addRule(newRule);
 		}
 		
 	}
 
-	private void determineQualifyingRuleDomainStartPoints(TypeDestination td,
+	private void determineQualifyingRuleDomainStartPoints(QualifyingRelationshipAttribute qra,
 			Set<Concept> conceptsWithQrAttribute) {
 		Set<Concept> remaining = new TreeSet<Concept>(conceptsWithQrAttribute);
 		while (remaining.size() > 0) {
 			Concept deepestConcept = getDeepestConcept(remaining);
 			Concept currentPosition = deepestConcept;
+			Set<Concept> allExceptions = new HashSet<Concept>();
 			//Do any of my parents also feature this Qualifying Relationship?  
 			//Move up and remove all descendents of the parent if so.
 			Collection<Concept> intersection = null;
@@ -951,6 +977,7 @@ public class MrcmBuilder {
 					//Work out the exceptions at each level - which of the children should NOT have this attribute?
 					Set<Concept> children = currentPosition.getAllDescendents(Concept.IMMEDIATE_CHILDREN_ONLY);
 					Collection<Concept> exceptions = CollectionUtils.subtract(children, conceptsWithQrAttribute);
+					allExceptions.addAll(exceptions);
 					if (!exceptions.isEmpty()) {
 						print (currentPosition + " " + exceptions.size() + " exceptions.", "       ");
 					}
@@ -959,14 +986,21 @@ public class MrcmBuilder {
 			//Once we've finished working up the tree, this is our highest point for this rule
 			
 			//Can we go one higher to capture our siblings and do a "Descendents" rule without too many exceptions?
-			currentPosition = checkOneLevelHigherQualifyingRelationships(currentPosition, conceptsWithQrAttribute);
+			Concept higherPosition = checkOneLevelHigherQualifyingRelationships(currentPosition, conceptsWithQrAttribute);
 			Set<Concept> desc = currentPosition.getAllDescendents(Concept.DEPTH_NOT_SET);
-			
-			print ("Rule start point at: " + Description.getFormattedConcept(currentPosition.getSctId()) + " - " + desc.size(), "    ");
+			CONSTRAINT constraint = CONSTRAINT.DESCENDENT_OR_SELF;
 			
 			//So we can also remove this one from our list, and its descendents if we went one higher
 			remaining.remove(currentPosition);
-			remaining.removeAll(desc);
+			if (!higherPosition.equals(currentPosition)) {
+				currentPosition = higherPosition;
+				remaining.removeAll(desc);
+				constraint = CONSTRAINT.DESCENDENT;
+			}
+			
+			print ("Rule start point at: " + Description.getFormattedConcept(currentPosition.getSctId()) + " - " + desc.size(), "    ");
+			QualifyingRelationshipRule newRule = new QualifyingRelationshipRule(currentPosition, constraint, allExceptions);
+			qra.addRule(newRule);
 		}
 		
 	}
@@ -1040,10 +1074,10 @@ public class MrcmBuilder {
 		return concepts;
 	}
 
-	private Map<TypeDestination, List<Relationship>> groupQualifyingRelationships() throws Exception {
-		Map<TypeDestination, List<Relationship>> groups = new TreeMap<TypeDestination, List<Relationship>>();
+	private Map<QualifyingRelationshipAttribute, List<Relationship>> groupQualifyingRelationships() throws Exception {
+		Map<QualifyingRelationshipAttribute, List<Relationship>> groups = new TreeMap<QualifyingRelationshipAttribute, List<Relationship>>();
 		for (Relationship r : GraphLoader.get().getRelationships(CHARACTERISTIC.QUALIFYING).values()){
-			TypeDestination thisTD = new TypeDestination(r.getTypeConcept(), r.getDestinationConcept());
+			QualifyingRelationshipAttribute thisTD = new QualifyingRelationshipAttribute(r.getTypeConcept(), r.getDestinationConcept());
 			List<Relationship> thisGroupList = null;
 			if (groups.containsKey(thisTD)) {
 				thisGroupList = groups.get(thisTD);

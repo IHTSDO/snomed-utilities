@@ -23,7 +23,7 @@ public class Description implements RF2SchemaConstants {
 	public static String getFormattedConcept(Long conceptId) {
 		String formattedConcept = Long.toString(conceptId);
 		if (allFSNs.containsKey(conceptId)) {
-			formattedConcept += "|" + allFSNs.get(conceptId).term + "|";
+			formattedConcept += " |" + allFSNs.get(conceptId).term + "|";
 		}
 		return formattedConcept;
 	}
