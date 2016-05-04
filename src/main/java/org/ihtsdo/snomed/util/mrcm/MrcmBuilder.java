@@ -30,6 +30,7 @@ import org.ihtsdo.snomed.util.pojo.Description;
 import org.ihtsdo.snomed.util.pojo.GroupShape;
 import org.ihtsdo.snomed.util.pojo.GroupsHash;
 import org.ihtsdo.snomed.util.pojo.QualifyingRelationshipRule;
+import org.ihtsdo.snomed.util.pojo.RF1Relationship;
 import org.ihtsdo.snomed.util.pojo.Relationship;
 import org.ihtsdo.snomed.util.pojo.RelationshipGroup;
 import org.ihtsdo.snomed.util.pojo.QualifyingRelationshipAttribute;
@@ -950,14 +951,14 @@ public class MrcmBuilder {
 			//Move up and remove all descendents of the parent if so.
 			Collection<Concept> intersection = null;
 			do {
-				intersection = org.apache.commons.collections.CollectionUtils.intersection(currentPosition.getParents(), remaining);
+				intersection = CollectionUtils.intersection(currentPosition.getParents(), remaining);
 				Concept bestParent = null;
 				if (intersection.size() > 1) {
 					//print ("Warning at " + Description.getFormattedConcept(currentPosition.getSctId()) + " has multiple parents with Qualifying attribute.","     ");
 					//have a peek at all parents to see which ones also feature the Qualifying Relationship.
 					Collection<Concept> preview;
 					for (Concept thisParent : intersection) {
-						preview = org.apache.commons.collections.CollectionUtils.intersection(thisParent.getParents(), remaining);
+						preview = CollectionUtils.intersection(thisParent.getParents(), remaining);
 						if (preview.size() > 0) {
 							if (bestParent != null) {
 								print (currentPosition + " has multiple matching parents: " + bestParent + " and " + thisParent, "      ");
@@ -975,7 +976,9 @@ public class MrcmBuilder {
 					remaining.removeAll(currentPosition.getAllDescendents(Concept.DEPTH_NOT_SET));
 					
 					//Work out the exceptions at each level - which of the children should NOT have this attribute?
-					Set<Concept> children = currentPosition.getAllDescendents(Concept.IMMEDIATE_CHILDREN_ONLY);
+					
+					//TODO Problem here that immediate children might have attribute, but not below that.
+					Set<Concept> children = currentPosition.getAllDescendents(Concept.DEPTH_NOT_SET);
 					Collection<Concept> exceptions = CollectionUtils.subtract(children, conceptsWithQrAttribute);
 					allExceptions.addAll(exceptions);
 					if (!exceptions.isEmpty()) {
@@ -1076,8 +1079,8 @@ public class MrcmBuilder {
 
 	private Map<QualifyingRelationshipAttribute, List<Relationship>> groupQualifyingRelationships() throws Exception {
 		Map<QualifyingRelationshipAttribute, List<Relationship>> groups = new TreeMap<QualifyingRelationshipAttribute, List<Relationship>>();
-		for (Relationship r : GraphLoader.get().getRelationships(CHARACTERISTIC.QUALIFYING).values()){
-			QualifyingRelationshipAttribute thisTD = new QualifyingRelationshipAttribute(r.getTypeConcept(), r.getDestinationConcept());
+		for (RF1Relationship r : GraphLoader.get().getRF1Relationships(CHARACTERISTIC.QUALIFYING).values()){
+			QualifyingRelationshipAttribute thisTD = new QualifyingRelationshipAttribute(r.getTypeConcept(), r.getDestinationConcept(), r.getRefinability());
 			List<Relationship> thisGroupList = null;
 			if (groups.containsKey(thisTD)) {
 				thisGroupList = groups.get(thisTD);

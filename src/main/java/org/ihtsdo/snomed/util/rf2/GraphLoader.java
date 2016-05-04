@@ -15,6 +15,7 @@ import org.ihtsdo.snomed.util.pojo.RF1Relationship;
 import org.ihtsdo.snomed.util.pojo.Relationship;
 import org.ihtsdo.snomed.util.rf2.schema.RF1SchemaConstants;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
+import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.CHARACTERISTIC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,7 @@ public class GraphLoader implements RF2SchemaConstants, RF1SchemaConstants {
 
 	private Map<String, Relationship> statedRelationships;
 	private Map<String, Relationship> inferredRelationships;
-	private Map<String, Relationship> qualifyingRelationships;
+	private Map<String, RF1Relationship> qualifyingRelationships;
 
 	private GraphLoader(String conceptFile, String statedFile, String inferredFile, String descriptionFile, String qualifyingFile) {
 		this.conceptFile = conceptFile;
@@ -96,9 +97,8 @@ public class GraphLoader implements RF2SchemaConstants, RF1SchemaConstants {
 		switch (characteristic) {
 		case STATED: return statedRelationships;
 		case INFERRED: return inferredRelationships;
-		case QUALIFYING: return qualifyingRelationships;
 		default: 
-			throw new Exception ("Unrecognised Characteristic: " + characteristic);
+			throw new Exception ("Unsupported RF2 Characteristic: " + characteristic);
 		}
 	}
 
@@ -153,11 +153,11 @@ public class GraphLoader implements RF2SchemaConstants, RF1SchemaConstants {
 		return loadedRelationships;
 	}
 	
-	private Map<String, Relationship> loadRF1RelationshipFile(String filePath, CHARACTERISTIC characteristic)
+	private Map<String, RF1Relationship> loadRF1RelationshipFile(String filePath, CHARACTERISTIC characteristic)
 			throws Exception {
 		// Does this file exist and not as a directory?
 		File file = getFile(filePath);
-		Map<String, Relationship> loadedRelationships = new HashMap<String, Relationship>();
+		Map<String, RF1Relationship> loadedRelationships = new HashMap<String, RF1Relationship>();
 		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 			String line;
 			boolean isFirstLine = true;
@@ -166,7 +166,7 @@ public class GraphLoader implements RF2SchemaConstants, RF1SchemaConstants {
 					String[] lineItems = line.split(FIELD_DELIMITER);
 					// All rows are active in RF1
 					if (lineItems[RF1_REL_IDX_CHARACTERISTICTYPE].equals(RF1_CHARACTERISTIC_TYPE_QUALIFIER)) {
-						Relationship r = new RF1Relationship(lineItems, characteristic);
+						RF1Relationship r = new RF1Relationship(lineItems, characteristic);
 						loadedRelationships.put(r.getUuid(), r);
 					}
 				} else {
@@ -214,6 +214,10 @@ public class GraphLoader implements RF2SchemaConstants, RF1SchemaConstants {
 			throw new IOException("Unable to read file " + filePath);
 		}
 		return file;
+	}
+
+	public Map<String, RF1Relationship> getRF1Relationships(CHARACTERISTIC c) {
+		return qualifyingRelationships;
 	}
 
 

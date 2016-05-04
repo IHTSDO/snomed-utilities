@@ -16,23 +16,29 @@ public class QualifyingRelationshipAttribute implements Comparable<QualifyingRel
 	private Concept type;
 	private Concept destination;
 	private List<QualifyingRelationshipRule> rules;
-	
+	private Integer refinability;
+
 	private transient int hash;
 	
 	private QualifyingRelationshipAttribute() {
 		rules = new ArrayList<QualifyingRelationshipRule>();
 	}
 
-	public QualifyingRelationshipAttribute(Concept type, Concept destination) {
+	public QualifyingRelationshipAttribute(Concept type, Concept destination, int refinability) {
 		this();
 		this.type = type;
 		this.destination = destination;
+		this.refinability = refinability;
 		String hashStr = type.getSctId().toString() + "_" + destination.getSctId().toString();
 		hash = hashStr.hashCode();
 	}
 	
 	public void addRule(QualifyingRelationshipRule rule) {
 		this.rules.add(rule);
+	}
+	
+	public Integer getRefinability() {
+		return refinability;
 	}
 	
 	public boolean equals(Object obj) {
