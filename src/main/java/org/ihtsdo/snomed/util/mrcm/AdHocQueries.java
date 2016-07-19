@@ -82,7 +82,10 @@ public class AdHocQueries {
 		long[] attributes = new long[] { attribute1, attribute2};
 		writeToFile ("SCTID, GROUP, DEF, FSN");
 		nextConcept:
-		for (Concept thisConcept : descendents) {
+		for (Concept thisInferredConcept : descendents) {
+			//We work with inferred hierarchy for working out what things are, but switch
+			//to current view when considering groups and attributes
+			Concept thisConcept = Concept.getConcept(thisInferredConcept.getSctId(), currentView);
 			if (conceptHasAttributes(thisConcept, attributes)) {
 				//Loop through the groups and see if attribute1 exists without attribute2
 				for (RelationshipGroup thisGroup : thisConcept.getGroups()) {
