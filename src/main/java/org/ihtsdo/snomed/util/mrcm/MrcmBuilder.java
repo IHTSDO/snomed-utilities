@@ -934,7 +934,7 @@ public class MrcmBuilder {
 			//Lets try a bottom up approach instead
 			determineQualifyingRuleDomainStartPoints(qra, sourceConcepts);
 		} else {
-			QualifyingRelationshipRule newRule = new QualifyingRelationshipRule(commonAncestor, CONSTRAINT.DESCENDENT_OR_SELF, exceptions);
+			QualifyingRelationshipRule newRule = new QualifyingRelationshipRule(commonAncestor, CONSTRAINT.DESCENDENT_OR_SELF, null, exceptions);
 			qra.addRule(newRule);
 		}
 		
@@ -981,6 +981,9 @@ public class MrcmBuilder {
 					Set<Concept> children = currentPosition.getAllDescendents(Concept.DEPTH_NOT_SET);
 					Collection<Concept> exceptions = CollectionUtils.subtract(children, conceptsWithQrAttribute);
 					allExceptions.addAll(exceptions);
+					
+					//children of the parent which have the attribute but whos children do NOT, are stop points
+					
 					if (!exceptions.isEmpty()) {
 						print (currentPosition + " " + exceptions.size() + " exceptions.", "       ");
 					}
@@ -1002,7 +1005,7 @@ public class MrcmBuilder {
 			}
 			
 			print ("Rule start point at: " + Description.getFormattedConcept(currentPosition.getSctId()) + " - " + desc.size(), "    ");
-			QualifyingRelationshipRule newRule = new QualifyingRelationshipRule(currentPosition, constraint, allExceptions);
+			QualifyingRelationshipRule newRule = new QualifyingRelationshipRule(currentPosition, constraint, null, allExceptions);
 			qra.addRule(newRule);
 		}
 		
