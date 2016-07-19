@@ -141,10 +141,19 @@ public class MrcmInteractiveMenu {
 		String functionChosen = in.nextLine().trim();
 		switch (functionChosen) {
 			case "a": 
-			printn("Found in which hierarchy? (eg 40733004 |Infectious disease (disorder)|)");
-			long hierarchySCTID = Long.parseLong(in.nextLine().trim());
-			new AdHocQueries("descendents_with_stated_fd_parents").conceptsWithStatedFDParent(hierarchySCTID, currentView);
-			break;
+				printn("Found in which hierarchy? (eg 40733004 |Infectious disease (disorder)|)");
+				long hierarchySCTID = Long.parseLong(in.nextLine().trim());
+				new AdHocQueries("descendents_with_stated_fd_parents").conceptsWithStatedFDParent(hierarchySCTID);
+				break;
+			case "b": 
+				printn("Found in which hierarchy? (eg 40733004 |Infectious disease (disorder)|) ");
+				hierarchySCTID = Long.parseLong(in.nextLine().trim());
+				printn("First attribute type? (eg 370135005 |Pathological process (attribute)|) ");
+				long attribute1 = Long.parseLong(in.nextLine().trim());
+				printn("Second attribute type? (eg 246075003 |Causative agent (attribute)|) ");
+				long attribute2 = Long.parseLong(in.nextLine().trim());
+				new AdHocQueries("attributes_not_grouped_together").attributesNotGroupedTogether(hierarchySCTID, attribute1, attribute2, currentView);
+				break;
 		}
 		
 	}
@@ -178,6 +187,7 @@ public class MrcmInteractiveMenu {
 		print("     Ad Hoc Menu  - " + currentView + " view");
 		print("---------------------------------------");
 		print("a - Concepts with FD Stated parent in sub-hierarchy");
+		print("b - Concepts with attributes present, but not grouped together, in sub-hierarchy");
 		print("q - quit");
 		printn("Choose a function: ");
 	}
