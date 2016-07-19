@@ -1,5 +1,6 @@
 package org.ihtsdo.snomed.util.mrcm;
 
+import java.io.IOException;
 import java.util.Scanner;
 
 import org.ihtsdo.snomed.util.pojo.Concept;
@@ -121,6 +122,10 @@ public class MrcmInteractiveMenu {
 					case "v":
 						currentView = (currentView == CHARACTERISTIC.INFERRED ? CHARACTERISTIC.STATED : CHARACTERISTIC.INFERRED );
 						break;
+					case "z":
+						displayAdHocMenu();
+						getAdHocMenuResponse(in);
+						break;
 					case "q":
 						System.exit(0);
 						break;
@@ -130,6 +135,18 @@ public class MrcmInteractiveMenu {
 
 			}
 		}
+	}
+
+	private void getAdHocMenuResponse(Scanner in) throws IOException {
+		String functionChosen = in.nextLine().trim();
+		switch (functionChosen) {
+			case "a": 
+			printn("Found in which hierarchy? (eg 40733004 |Infectious disease (disorder)|)");
+			long hierarchySCTID = Long.parseLong(in.nextLine().trim());
+			new AdHocQueries("descendents_with_stated_fd_parents").conceptsWithStatedFDParent(hierarchySCTID, currentView);
+			break;
+		}
+		
 	}
 
 	private void displayMenu() {
@@ -151,6 +168,16 @@ public class MrcmInteractiveMenu {
 		print("t - texual matches of substring, order agnostic");
 		print("u - find concepts using attribute value");
 		print("v - switch view (stated / inferred)");
+		print("z - next menu - Ad Hoc Queries...");
+		print("q - quit");
+		printn("Choose a function: ");
+	}
+	
+	private void displayAdHocMenu() {
+		print("\n");
+		print("     Ad Hoc Menu  - " + currentView + " view");
+		print("---------------------------------------");
+		print("a - Concepts with FD Stated parent in sub-hierarchy");
 		print("q - quit");
 		printn("Choose a function: ");
 	}
