@@ -7,3 +7,4 @@ release.properties
 bin/
 *.csv
 *.json
+*.txt
