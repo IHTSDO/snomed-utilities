@@ -4,6 +4,7 @@ public interface RF2SchemaConstants {
 
 	// id effectiveTime active moduleId sourceId destinationId relationshipGroup typeId characteristicTypeId modifierId
 	public static final Long ISA_ID = new Long(116680003);
+	public static final Long SNOMED_ROOT_CONCEPT = new Long(138875005);
 	public static final String CHARACTERISTIC_STATED_SCTID = "900000000000010007";
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";
@@ -11,6 +12,48 @@ public interface RF2SchemaConstants {
 	public static final String INACTIVE_FLAG = "0";
 	public static final String HEADER_ROW = "id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId\r\n";
 
+	static int NOT_SET = -1;
+	static int IMMEDIATE_CHILD = 1;
+	static int NA = -1;
+	static String FSN = "900000000000003001";
+	static final String FULLY_DEFINED_SCTID = "900000000000073002";
+	static final String FULLY_SPECIFIED_NAME = "900000000000003001";
+	final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
+	final String SPACE = " ";
+	final String COMMA = ",";
+	final String COMMA_QUOTE = ",\"";
+	final String QUOTE_COMMA = "\",";
+	final String QUOTE_COMMA_QUOTE = "\",\"";
+	final String TAB = "\t";
+	final String CSV_FIELD_DELIMITER = COMMA;
+	final String TSV_FIELD_DELIMITER = TAB;
+	final String QUOTE = "\"";
+	final String INGREDIENT_SEPARATOR = "+";
+	final String INGREDIENT_SEPARATOR_ESCAPED = "\\+";
+	
+	public enum PartionIdentifier {CONCEPT, DESCRIPTION, RELATIONSHIP};
+	
+	public enum InactivationIndicator {DUPLICATE, OUTDATED, ERRONEOUS, LIMITED, MOVED_ELSEWHERE, 
+		PENDING_MOVE, INAPPROPRIATE, CONCEPT_NON_CURRENT, RETIRED};
+	
+	static final String GB_ENG_LANG_REFSET = "900000000000508004";
+	static final String US_ENG_LANG_REFSET = "900000000000509007";
+	
+	final public String SEMANTIC_TAG_START = "(";
+	
+
+	public static enum CHARACTERISTIC {
+		STATED, INFERRED, ADDITIONAL
+	};
+
+	public enum DEFINITION_STATUS { PRIMITIVE, FULLY_DEFINED };
+	public enum MODIFER { EXISTENTIAL, UNIVERSAL};
+	public enum ACTIVE_STATE { ACTIVE, INACTIVE, BOTH };
+	public enum ACCEPTABILITY { ACCEPTABLE, PREFERRED };
+	public enum CARDINALITY { AT_LEAST_ONE, EXACTLY_ONE };
+	public enum DESCRIPTION_TYPE { FSN, SYNONYM };
+	
+	
 	// Relationship columns
 	public static final int REL_IDX_ID = 0;
 	public static final int REL_IDX_EFFECTIVETIME = 1;
@@ -44,10 +87,4 @@ public interface RF2SchemaConstants {
 	public static final int DES_IDX_TERM = 7;
 	public static final int DES_IDX_CASESIGNIFICANCEID = 8;
 
-	public static final String FULLY_DEFINED_SCTID = "900000000000073002";
-	public static final String FULLY_SPECIFIED_NAME = "900000000000003001";
-
-	public static enum CHARACTERISTIC {
-		STATED, INFERRED, ADDITIONAL
-	};
 }
