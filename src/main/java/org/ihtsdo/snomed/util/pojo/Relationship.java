@@ -136,15 +136,26 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 	public void setChangedThisRelease(boolean changedThisRelease) {
 		this.changedThisRelease = changedThisRelease;
 	}
-
-	public String toPrettyString() {
+	
+	public String toPrettyString(boolean includeSource) {
 		StringBuilder sb = new StringBuilder();
+		if (includeSource) {
+			sb.append (Description.getFormattedConcept(getSourceId())).append(" - ");
+		}
 		sb.append(getGroup())
 		.append(" - ")
 		.append(Description.getFormattedConcept(getTypeId()))
 		.append(": ")
 		.append(Description.getFormattedConcept(getDestinationId()));
 		return sb.toString();
+	}
+
+	public String toPrettyString() {
+		return toPrettyString(false);
+	}
+
+	public void isActive(boolean activeFlag) {
+		this.active = activeFlag;
 	}
 
 }

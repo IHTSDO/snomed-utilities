@@ -154,6 +154,8 @@ public class MrcmInteractiveMenu {
 				long attribute2 = Long.parseLong(in.nextLine().trim());
 				new AdHocQueries("attributes_not_grouped_together").attributesNotGroupedTogether(hierarchySCTID, attribute1, attribute2, currentView);
 				break;
+			case "p":
+				new AdHocQueries("stated_part_ofs").generateStatedPartOfs();
 		}
 		
 	}
@@ -188,6 +190,7 @@ public class MrcmInteractiveMenu {
 		print("---------------------------------------");
 		print("a - Concepts with FD Stated parent in sub-hierarchy");
 		print("b - Concepts with attributes present, but not grouped together, in sub-hierarchy");
+		print("p - Generate Part Of stated relationships without structure");
 		print("q - quit");
 		printn("Choose a function: ");
 	}

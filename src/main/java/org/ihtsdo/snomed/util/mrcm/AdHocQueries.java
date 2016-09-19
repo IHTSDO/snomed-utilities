@@ -9,10 +9,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Set;
 
+import org.ihtsdo.snomed.util.SnomedUtils;
 import org.ihtsdo.snomed.util.pojo.*;
-import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.CHARACTERISTIC;
+import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
 
-public class AdHocQueries {
+public class AdHocQueries implements RF2SchemaConstants{
 	
 	File reportFile;
 	static final String QUOTE = "\"";
@@ -129,6 +130,32 @@ public class AdHocQueries {
 			}
 		}
 		return hasAllAttributes;
+	}
+
+	public void generateStatedPartOfs() {
+		//Find all concepts but remove any that are descendants of Body Structure
+		Concept top = Concept.getConcept(SNOMED_ROOT_CONCEPT, CHARACTERISTIC.INFERRED);
+		Set<Concept> ontology = top.getDescendents(Concept.DEPTH_NOT_SET, false);
+		long partOfAttributeSCTID = 123005000L;
+		
+		//Output any PART OF relationships as a Stated File with no effective Time
+		//Part Ofs are always in group 0 so we can speed up processing by just checking that group
+		println ("Examining " + ontology.size() + " concepts");
+		for (Concept c : ontology) {
+			for (Relationship r : c.getGroup(0)) {
+				if (r.getTypeId().longValue() == partOfAttributeSCTID && r.isActive()) {
+					//Any concept that has "Structure" in the FSN (other than in the semantic tag)
+					//gets filtered out
+					String fsn = Description.getDescription(r.getSourceConcept());
+					String [] fsnParts = SnomedUtils.deconstructFSN(fsn);
+					if (fsnParts[0].toLowerCase().contains("structure")) {
+						println ("No " + r.toPrettyString(true));
+					} else {
+						println ("Yes " + r.toPrettyString(true));
+					}
+				}
+			}
+		}
 	}
 
 }

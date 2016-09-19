@@ -33,12 +33,9 @@ public class GraphLoader implements RF2SchemaConstants {
 	private final String descriptionFile;
 	private String releaseDate;
 
-	private final Long SNOMED_ROOT_CONCEPT = 138875005L;
 	private final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
 
 
-	private Map<String, Relationship> statedRelationships;
-	private Map<String, Relationship> inferredRelationships;
 
 	public GraphLoader(String conceptFile, String statedFile, String inferredFile, String descriptionFile) {
 		this.conceptFile = conceptFile;
@@ -55,10 +52,10 @@ public class GraphLoader implements RF2SchemaConstants {
 		loadConceptFile(conceptFile);
 
 		LOGGER.debug("Loading Stated File: {}", statedFile);
-		statedRelationships = loadRelationshipFile(statedFile, CHARACTERISTIC.STATED);
+		loadRelationshipFile(statedFile, CHARACTERISTIC.STATED);
 
 		LOGGER.debug("Loading Inferred File: {}", inferredFile);
-		inferredRelationships = loadRelationshipFile(inferredFile, CHARACTERISTIC.INFERRED);
+		loadRelationshipFile(inferredFile, CHARACTERISTIC.INFERRED);
 
 		LOGGER.debug("Loading Description File: {}", descriptionFile);
 		loadDescriptionFile(descriptionFile);
@@ -92,11 +89,10 @@ public class GraphLoader implements RF2SchemaConstants {
 		}
 	}
 
-	private Map<String, Relationship> loadRelationshipFile(String filePath, CHARACTERISTIC characteristic)
+	private void loadRelationshipFile(String filePath, CHARACTERISTIC characteristic)
 			throws Exception {
 		// Does this file exist and not as a directory?
 		File file = getFile(filePath);
-		Map<String, Relationship> loadedRelationships = new HashMap<String, Relationship>();
 
 		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
 			String line;
@@ -106,10 +102,9 @@ public class GraphLoader implements RF2SchemaConstants {
 				if (!isFirstLine) {
 					String[] lineItems = line.split(FIELD_DELIMITER);
 					// Only store active relationships
-					if (lineItems[REL_IDX_ACTIVE].equals(ACTIVE_FLAG)
-							&& !lineItems[REL_IDX_CHARACTERISTICTYPEID].equals(ADDITIONAL_RELATIONSHIP)) {
+					if (lineItems[REL_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
 						Relationship r = new Relationship(lineItems, characteristic);
-						loadedRelationships.put(r.getUuid(), r);
+						r.isActive(true);
 						if (lineItems[REL_IDX_EFFECTIVETIME].equals(this.releaseDate)) {
 							r.setChangedThisRelease(true);
 						}
@@ -121,7 +116,6 @@ public class GraphLoader implements RF2SchemaConstants {
 
 			}
 		}
-		return loadedRelationships;
 	}
 	
 	private void loadConceptFile(String filePath) throws Exception {
