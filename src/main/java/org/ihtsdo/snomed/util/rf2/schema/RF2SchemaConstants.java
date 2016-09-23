@@ -51,7 +51,7 @@ public interface RF2SchemaConstants {
 	public enum ACTIVE_STATE { ACTIVE, INACTIVE, BOTH };
 	public enum ACCEPTABILITY { ACCEPTABLE, PREFERRED };
 	public enum CARDINALITY { AT_LEAST_ONE, EXACTLY_ONE };
-	public enum DESCRIPTION_TYPE { FSN, SYNONYM };
+	public enum DESCRIPTION_TYPE { FSN, SYNONYM, DEFINTION };
 	
 	
 	// Relationship columns
