@@ -3,7 +3,9 @@ package org.ihtsdo.snomed.util.mrcm;
 import java.io.IOException;
 import java.util.Scanner;
 
+import org.ihtsdo.snomed.util.SnomedUtilException;
 import org.ihtsdo.snomed.util.pojo.Concept;
+import org.ihtsdo.snomed.util.qa.PatternCollator;
 import org.ihtsdo.snomed.util.rf2.GraphLoader;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.CHARACTERISTIC;
 import org.slf4j.Logger;
@@ -137,7 +139,7 @@ public class MrcmInteractiveMenu {
 		}
 	}
 
-	private void getAdHocMenuResponse(Scanner in) throws IOException {
+	private void getAdHocMenuResponse(Scanner in) throws IOException, SnomedUtilException {
 		String functionChosen = in.nextLine().trim();
 		switch (functionChosen) {
 			case "a": 
@@ -156,6 +158,13 @@ public class MrcmInteractiveMenu {
 				break;
 			case "p":
 				new AdHocQueries("stated_part_ofs").generateStatedPartOfs();
+				break;
+			case "s":
+				printn("What directory path contains the pattern json files?");
+				String patternDir = in.nextLine().trim();
+				printn("Output to which directory?");
+				String outputDir = in.nextLine().trim();
+				new PatternCollator(patternDir, outputDir).collatePatternOutput();
 		}
 		
 	}
@@ -191,6 +200,7 @@ public class MrcmInteractiveMenu {
 		print("a - Concepts with FD Stated parent in sub-hierarchy");
 		print("b - Concepts with attributes present, but not grouped together, in sub-hierarchy");
 		print("p - Generate Part Of stated relationships without structure");
+		print("s - Statistics, collate QA Pattern output");
 		print("q - quit");
 		printn("Choose a function: ");
 	}

@@ -33,10 +33,6 @@ public class GraphLoader implements RF2SchemaConstants {
 	private final String descriptionFile;
 	private String releaseDate;
 
-	private final String ADDITIONAL_RELATIONSHIP = "900000000000227009";
-
-
-
 	public GraphLoader(String conceptFile, String statedFile, String inferredFile, String descriptionFile) {
 		this.conceptFile = conceptFile;
 		this.statedFile = statedFile;
@@ -60,8 +56,12 @@ public class GraphLoader implements RF2SchemaConstants {
 		LOGGER.debug("Loading Description File: {}", descriptionFile);
 		loadDescriptionFile(descriptionFile);
 
-		LOGGER.debug("Populating inferred hierarchy depth");
+		LOGGER.debug("Populating inferred hierarchy depth - inferred concept hierarchy");
 		Concept hierarchyRoot = Concept.getConcept(SNOMED_ROOT_CONCEPT, CHARACTERISTIC.INFERRED);
+		populateHierarchyDepth(hierarchyRoot, 0);
+		
+		LOGGER.debug("Populating inferred hierarchy depth - stated concept hierarchy");
+		hierarchyRoot = Concept.getConcept(SNOMED_ROOT_CONCEPT, CHARACTERISTIC.STATED);
 		populateHierarchyDepth(hierarchyRoot, 0);
 
 		LOGGER.debug("Loading complete");
