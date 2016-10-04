@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.ihtsdo.util.GlobalUtils.print;
@@ -26,7 +27,8 @@ public class PatternCollator {
 	private static final String JSON = ".json";
 	private String outputFileName;
 	private String[] headers = new String[] {"PatternName","Concept","FSN (commas stripped)","hasChanged","isNew","Hierarchy1","Hierarchy2","Hierarchy3"};
-
+	private int duplicatesRemoved = 0;
+	
 	public PatternCollator (String patternDir, String outputDir) {
 		this.patternDir = new File(patternDir);
 		this.outputDir = new File (outputDir);
@@ -54,9 +56,11 @@ public class PatternCollator {
 				}
 			}
 		}
+		print ("Process complete.  Skipped " + duplicatesRemoved + " duplicates");
 	}
 
 	private void collateFile(File file) throws JsonSyntaxException, JsonIOException, IOException {
+		Set<String> conceptsSeen = new HashSet<String>();
 		String pattern = file.getName().replace(JSON, "").replace("_", " ");
 		print ("Processing " + pattern);
 		
@@ -64,16 +68,23 @@ public class PatternCollator {
 		PatternResult[] concepts = gson.fromJson(new FileReader(file), PatternResult[].class);
 		print ("Detected " + concepts.length + " concepts that match " + pattern);
 		for (PatternResult concept : concepts) {
-			String[] hierarchy = getHierarchyPath(concept.getConceptId());
-			String[] lineItems = new String[] { pattern,
-												concept.getConceptId(),
-												concept.getTerm().replace(",", ""),
-												concept.getChanged(),
-												concept.getIsNew(),
-												hierarchy[0],
-												hierarchy[1],
-												hierarchy[2]};
-			GlobalUtils.outputToFile(outputFileName, lineItems, ",", true);
+			String conceptId = concept.getConceptId();
+			if (conceptsSeen.contains(conceptId)) {
+				print ("Already seen " + pattern + " - " + conceptId);
+				duplicatesRemoved++;
+			} else {
+				String[] hierarchy = getHierarchyPath(conceptId);
+				String[] lineItems = new String[] { pattern,
+													conceptId,
+													concept.getTerm().replace(",", ""),
+													concept.getChanged(),
+													concept.getIsNew(),
+													hierarchy[0],
+													hierarchy[1],
+													hierarchy[2]};
+				GlobalUtils.outputToFile(outputFileName, lineItems, ",", true);
+				conceptsSeen.add(conceptId);
+			}
 		}
 	}
 
