@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.util.Scanner;
 
 import org.ihtsdo.snomed.util.SnomedUtilException;
+import org.ihtsdo.snomed.util.mrcm.SnomedConstants.DefinitionStatus;
 import org.ihtsdo.snomed.util.pojo.Concept;
 import org.ihtsdo.snomed.util.qa.PatternCollator;
 import org.ihtsdo.snomed.util.rf2.GraphLoader;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.CHARACTERISTIC;
+import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.DEFINITION_STATUS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +61,9 @@ public class MrcmInteractiveMenu {
 					case "d":
 						printn("Enter SCTID to process: ");
 						String sctid = in.nextLine().trim();
-						new MrcmBuilder().determineMRCM(sctid, currentView, Concept.DEPTH_NOT_SET);
+						printn("[F]ully Defined, [P]rimitive or [A]ll concepts?? F/P/A: ");
+						DefinitionStatus definitionStatus = DefinitionStatus.getStatus(in.nextLine().trim());
+						new MrcmBuilder().determineMRCM(sctid, currentView, Concept.DEPTH_NOT_SET, definitionStatus);
 						break;
 					case "e":
 						EquivalencyChecker.detectEquivalencies();
@@ -86,7 +90,9 @@ public class MrcmInteractiveMenu {
 					case "m":
 						printn("Enter SCTID to process: ");
 						sctid = in.nextLine().trim();
-						new MrcmBuilder().determineMRCM(sctid, currentView, Concept.IMMEDIATE_CHILDREN_ONLY);
+						printn("[F]ully Defined, [P]rimitive or [A]ll concepts?? F/P/A: ");
+						definitionStatus = DefinitionStatus.getStatus(in.nextLine().trim());
+						new MrcmBuilder().determineMRCM(sctid, currentView, Concept.IMMEDIATE_CHILDREN_ONLY, definitionStatus);
 						break;
 					case "n":
 						printn("Calculate averge depth of concepts");

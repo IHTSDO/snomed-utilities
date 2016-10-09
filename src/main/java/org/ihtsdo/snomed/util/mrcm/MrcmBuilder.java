@@ -15,6 +15,7 @@ import java.util.TreeSet;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
+import org.ihtsdo.snomed.util.mrcm.SnomedConstants.DefinitionStatus;
 import org.ihtsdo.snomed.util.pojo.Concept;
 import org.ihtsdo.snomed.util.pojo.Description;
 import org.ihtsdo.snomed.util.pojo.GroupShape;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
 
-public class MrcmBuilder {
+public class MrcmBuilder implements SnomedConstants {
 
 	private static String INDENT_0 = "";
 	private static String INDENT_1 = "\t";
@@ -44,13 +45,13 @@ public class MrcmBuilder {
 
 	private final Logger logger = LoggerFactory.getLogger(GraphLoader.class);
 
-	public void determineMRCM(Concept c, int depth) throws UnsupportedEncodingException {
-		Set<Concept> siblings = c.getDescendents(depth, false);
-		Set<Concept> definedSiblings = c.getDescendents(depth, true);
-		logger.info("Examining {} fully defined out of {} children of {}", definedSiblings.size(), siblings.size(),
+	public void determineMRCM(Concept c, int depth, DefinitionStatus defStatus) throws UnsupportedEncodingException {
+		Set<Concept> siblings = c.getDescendents(depth, DefinitionStatus.ALL);
+		Set<Concept> selectedSiblings = c.getDescendents(depth, defStatus);
+		logger.info("Examining {} {} out of {} children of {}", selectedSiblings.size(), defStatus.name(), siblings.size(),
 				Description.getFormattedConcept(c.getSctId()));
 
-		examineBasicGroupShape(definedSiblings);
+		examineBasicGroupShape(selectedSiblings);
 
 		// examineAbstractShape(definedSiblings);
 
@@ -185,7 +186,7 @@ public class MrcmBuilder {
 		}
 	}
 
-	public void determineMRCM(String sctid, CHARACTERISTIC hierarchyToExamine, int depth)
+	public void determineMRCM(String sctid, CHARACTERISTIC hierarchyToExamine, int depth, DefinitionStatus definitionStatus)
 			throws UnsupportedEncodingException {
 		Long conceptToExamine = null;
 		try {
@@ -195,7 +196,7 @@ public class MrcmBuilder {
 			return;
 		}
 		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
-		determineMRCM(c, depth);
+		determineMRCM(c, depth, definitionStatus);
 	}
 
 	public void displayShape(String sctid, CHARACTERISTIC hierarchyToExamine) {

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.ihtsdo.snomed.util.mrcm.SnomedConstants.DefinitionStatus;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
 
 public class Concept implements Comparable<Concept>, RF2SchemaConstants {
@@ -110,17 +111,23 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	}
 
 	public Set<Concept> getDescendents(int depth, boolean fullyDefinedOnly) {
-		return populateDescendents(new HashSet<Concept>(), fullyDefinedOnly, depth);
+		return populateDescendents(new HashSet<Concept>(), fullyDefinedOnly?DefinitionStatus.FULLY_DEFINED:DefinitionStatus.ALL, depth);
+	}
+	
+	public Set<Concept> getDescendents(int depth, DefinitionStatus defStatus) {
+		return populateDescendents(new HashSet<Concept>(), defStatus, depth);
 	}
 
-	private Set<Concept> populateDescendents(Set<Concept> allDescendents, boolean fullyDefinedOnly, int depth) {
+	private Set<Concept> populateDescendents(Set<Concept> allDescendents,DefinitionStatus defStatus, int depth) {
 		for (Concept thisChild : children) {
-			if (!fullyDefinedOnly || (fullyDefinedOnly && thisChild.isFullyDefined)) {
+			if (defStatus.equals(DefinitionStatus.ALL) 
+					|| (defStatus.equals(DefinitionStatus.FULLY_DEFINED) && thisChild.isFullyDefined)
+					|| (defStatus.equals(DefinitionStatus.PRIMITIVE) && !thisChild.isFullyDefined)) {
 				allDescendents.add(thisChild);
 			}
 			if (depth == DEPTH_NOT_SET || depth > 1) {
 				int newDepth = depth == DEPTH_NOT_SET ? DEPTH_NOT_SET : depth - 1;
-				thisChild.populateDescendents(allDescendents, fullyDefinedOnly, newDepth);
+				thisChild.populateDescendents(allDescendents, defStatus, newDepth);
 			}
 		}
 		return allDescendents;
