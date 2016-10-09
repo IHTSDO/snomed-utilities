@@ -15,7 +15,6 @@ import java.util.TreeSet;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
-import org.ihtsdo.snomed.util.mrcm.SnomedConstants.DefinitionStatus;
 import org.ihtsdo.snomed.util.pojo.Concept;
 import org.ihtsdo.snomed.util.pojo.Description;
 import org.ihtsdo.snomed.util.pojo.GroupShape;
@@ -45,11 +44,11 @@ public class MrcmBuilder implements SnomedConstants {
 
 	private final Logger logger = LoggerFactory.getLogger(GraphLoader.class);
 
-	public void determineMRCM(Concept c, int depth, DefinitionStatus defStatus) throws UnsupportedEncodingException {
+	public void determineMRCM(Concept c, int depth, DefinitionStatus defStatus, CHARACTERISTIC characteristicType) throws UnsupportedEncodingException {
 		Set<Concept> siblings = c.getDescendents(depth, DefinitionStatus.ALL);
 		Set<Concept> selectedSiblings = c.getDescendents(depth, defStatus);
-		logger.info("Examining {} {} out of {} children of {}", selectedSiblings.size(), defStatus.name(), siblings.size(),
-				Description.getFormattedConcept(c.getSctId()));
+		logger.info("Examining {} {} out of {} children of {} - {}", selectedSiblings.size(), defStatus.name(), siblings.size(),
+				Description.getFormattedConcept(c.getSctId()), characteristicType);
 
 		examineBasicGroupShape(selectedSiblings);
 
@@ -186,7 +185,7 @@ public class MrcmBuilder implements SnomedConstants {
 		}
 	}
 
-	public void determineMRCM(String sctid, CHARACTERISTIC hierarchyToExamine, int depth, DefinitionStatus definitionStatus)
+	public void determineMRCM(String sctid, CHARACTERISTIC characteristicType, int depth, DefinitionStatus definitionStatus)
 			throws UnsupportedEncodingException {
 		Long conceptToExamine = null;
 		try {
@@ -195,8 +194,8 @@ public class MrcmBuilder implements SnomedConstants {
 			print("Unable to parse SCTID  from '" + sctid + "' due to " + e.getMessage(), "");
 			return;
 		}
-		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
-		determineMRCM(c, depth, definitionStatus);
+		Concept c = Concept.getConcept(conceptToExamine, characteristicType);
+		determineMRCM(c, depth, definitionStatus, characteristicType);
 	}
 
 	public void displayShape(String sctid, CHARACTERISTIC hierarchyToExamine) {
