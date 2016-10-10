@@ -40,7 +40,7 @@ public class GraphLoader implements RF2SchemaConstants {
 		this.descriptionFile = descriptionFile;
 	}
 
-	public void loadRelationships() throws Exception {
+	public void loadRelationships(boolean storeLineItems) throws Exception {
 		
 		releaseDate = determineReleaseDate(conceptFile);
 
@@ -48,10 +48,10 @@ public class GraphLoader implements RF2SchemaConstants {
 		loadConceptFile(conceptFile);
 
 		LOGGER.debug("Loading Stated File: {}", statedFile);
-		loadRelationshipFile(statedFile, CHARACTERISTIC.STATED);
+		loadRelationshipFile(statedFile, CHARACTERISTIC.STATED, storeLineItems);
 
 		LOGGER.debug("Loading Inferred File: {}", inferredFile);
-		loadRelationshipFile(inferredFile, CHARACTERISTIC.INFERRED);
+		loadRelationshipFile(inferredFile, CHARACTERISTIC.INFERRED, storeLineItems);
 
 		LOGGER.debug("Loading Description File: {}", descriptionFile);
 		loadDescriptionFile(descriptionFile);
@@ -89,7 +89,7 @@ public class GraphLoader implements RF2SchemaConstants {
 		}
 	}
 
-	private void loadRelationshipFile(String filePath, CHARACTERISTIC characteristic)
+	private void loadRelationshipFile(String filePath, CHARACTERISTIC characteristic, boolean storeLineItems)
 			throws Exception {
 		// Does this file exist and not as a directory?
 		File file = getFile(filePath);
@@ -103,7 +103,7 @@ public class GraphLoader implements RF2SchemaConstants {
 					String[] lineItems = line.split(FIELD_DELIMITER);
 					// Only store active relationships
 					if (lineItems[REL_IDX_ACTIVE].equals(ACTIVE_FLAG)) {
-						Relationship r = new Relationship(lineItems, characteristic);
+						Relationship r = new Relationship(lineItems, characteristic, storeLineItems);
 						r.isActive(true);
 						if (lineItems[REL_IDX_EFFECTIVETIME].equals(this.releaseDate)) {
 							r.setChangedThisRelease(true);

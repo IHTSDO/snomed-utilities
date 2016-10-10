@@ -24,6 +24,14 @@ public class SnomedUtils implements RF2SchemaConstants{
 		return errorMsg;
 	}
 	
+	public static void isValid(String sctId, PartionIdentifier partitionIdentifier,
+			boolean errorIfInvalid) throws SnomedUtilException {
+		String errMsg = isValid(sctId,partitionIdentifier);
+		if (errorIfInvalid && errMsg != null) {
+			throw new SnomedUtilException(errMsg);
+		}
+	}
+	
 	public static String[] deconstructFSN(String fsn) {
 		String[] elements = new String[2];
 		int cutPoint = fsn.lastIndexOf(SEMANTIC_TAG_START);
