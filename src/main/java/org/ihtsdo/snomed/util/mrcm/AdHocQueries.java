@@ -2,17 +2,15 @@ package org.ihtsdo.snomed.util.mrcm;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Set;
 
 import org.ihtsdo.snomed.util.IdGenerator;
+import org.ihtsdo.snomed.util.Rf2ArchiveBuilder;
 import org.ihtsdo.snomed.util.SnomedUtilException;
 import org.ihtsdo.snomed.util.SnomedUtils;
 import org.ihtsdo.snomed.util.pojo.*;
@@ -21,6 +19,7 @@ import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
 public class AdHocQueries implements RF2SchemaConstants{
 	
 	File reportFile;
+	Rf2ArchiveBuilder archiver;
 	static final String QUOTE = "\"";
 	static final String QUOTE_COMMA = "\",";
 	static final String QUOTE_COMMA_QUOTE = "\",\"";
@@ -147,8 +146,8 @@ public class AdHocQueries implements RF2SchemaConstants{
 		if (!effectiveTime.isEmpty()) {
 			fileDate = effectiveTime;
 		}
-		String outputFileName = "sct2_StatedRelationship_Delta_INT_" + fileDate + ".txt";
-		
+		archiver = new Rf2ArchiveBuilder(fileDate);
+		archiver.init();
 		//Output any PART OF relationships as a Stated File with no effective Time
 		//Part Ofs are always in group 0 so we can speed up processing by just checking that group
 		println ("Examining " + ontology.size() + " concepts");
@@ -163,51 +162,22 @@ public class AdHocQueries implements RF2SchemaConstants{
 						println ("No " + r.toPrettyString(true));
 					} else {
 						println ("Yes " + r.toPrettyString(true));
-						outputStatedPartOf(outputFileName,r, idGen, effectiveTime);
+						outputStatedPartOf(r, idGen, effectiveTime);
 					}
 				}
 			}
 		}
+		archiver.createArchive();
 	}
 
-	private void outputStatedPartOf(String outputFileName, Relationship r, IdGenerator idGen, String effectiveTime) throws IOException, SnomedUtilException {
+	private void outputStatedPartOf(Relationship r, IdGenerator idGen, String effectiveTime) throws IOException, SnomedUtilException {
 		//Recover the columns of the relationship in the inferred form and tweak for stated
 		String[] columns = r.toRF2();
 		//New relationships so give a new ID and set the effective time to blank
 		columns[REL_IDX_ID] = idGen.getSCTID(PartionIdentifier.RELATIONSHIP);
 		columns[REL_IDX_EFFECTIVETIME] = effectiveTime;
 		columns[REL_IDX_CHARACTERISTICTYPEID] = SCTID_STATED_RELATIONSHIP;
-		writeToRF2File(outputFileName, columns);
+		archiver.writeToRF2File(RF2_FILE.STATED, columns);
 	}
 	
-	protected void writeToRF2File(String fileName, String[] columns) throws IOException {
-		File file = ensureFileExists(fileName);
-		try(	OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(file, true), StandardCharsets.UTF_8);
-				BufferedWriter bw = new BufferedWriter(osw);
-				PrintWriter out = new PrintWriter(bw))
-		{
-			StringBuffer line = new StringBuffer();
-			for (int x=0; x<columns.length; x++) {
-				if (x > 0) {
-					line.append(TSV_FIELD_DELIMITER);
-				}
-				line.append(columns[x]==null?"":columns[x]);
-			}
-			out.print(line.toString() + LINE_DELIMITER);
-		} catch (Exception e) {
-			println ("Unable to output report rf2 line due to " + e.getMessage());
-		}
-	}
-	
-	protected File ensureFileExists(String fileName) throws IOException {
-		File file = new File(fileName);
-		if (!file.exists()) {
-			if (file.getParentFile() != null) {
-				file.getParentFile().mkdirs();
-			}
-			file.createNewFile();
-		}
-		return file;
-	}
-
 }

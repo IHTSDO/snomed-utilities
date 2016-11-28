@@ -31,6 +31,8 @@ public interface RF2SchemaConstants {
 	final String INGREDIENT_SEPARATOR = "+";
 	final String INGREDIENT_SEPARATOR_ESCAPED = "\\+";
 	
+	public enum RF2_FILE { CONCEPT, STATED, INFERRED, LANGUAGE, DESCRIPTION };
+	
 	public enum PartionIdentifier {CONCEPT, DESCRIPTION, RELATIONSHIP};
 	
 	public enum InactivationIndicator {DUPLICATE, OUTDATED, ERRONEOUS, LIMITED, MOVED_ELSEWHERE, 
