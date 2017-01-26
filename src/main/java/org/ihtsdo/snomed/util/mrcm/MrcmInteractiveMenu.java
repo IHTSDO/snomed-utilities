@@ -9,13 +9,12 @@ import org.ihtsdo.snomed.util.pojo.Concept;
 import org.ihtsdo.snomed.util.qa.PatternCollator;
 import org.ihtsdo.snomed.util.rf2.GraphLoader;
 import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.CHARACTERISTIC;
-import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants.DEFINITION_STATUS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MrcmInteractiveMenu {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(GraphLoader.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MrcmInteractiveMenu.class);
 
 	public static int mb = 1024 * 1024;
 	
