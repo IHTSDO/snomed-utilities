@@ -1,12 +1,13 @@
 package org.ihtsdo.snomed.util.rf2.schema;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 public class SchemaFactory {
 
+	public static final String OWL = "OWL";
 	public static final String REL_2 = "rel2";
 	public static final String DER_2 = "der2";
 	public static final String SCT_2 = "sct2";
@@ -42,13 +43,18 @@ public class SchemaFactory {
 
 				boolean relFile = fileType.equals(REL_2);
 				boolean effectiveTimeMandatory = !relFile;
-
+				boolean isOwlRefset = false;
 				DataType sctidType;
 				if (relFile) {
 					sctidType = DataType.SCTID_OR_UUID;
 					if (componentType == ComponentType.REFSET) {
-						// Reset
 						fileType = DER_2;
+						//OWl refset
+						String contentSubType = nameParts[2];
+						if (contentSubType.startsWith(OWL)) {
+							fileType = SCT_2;
+							isOwlRefset = true;
+						}
 					} else {
 						// Core component
 						fileType = SCT_2;
@@ -58,7 +64,7 @@ public class SchemaFactory {
 					sctidType = DataType.SCTID;
 				}
 
-				if (fileType.equals(DER_2)) {
+				if (fileType.equals(DER_2) || isOwlRefset) {
 					if (contentTypeString.equals(ComponentType.REFSET.toString())) {
 						// Simple Refset
 						schema = createSimpleRefsetSchema(filenameNoExtension, relFile, sctidType);

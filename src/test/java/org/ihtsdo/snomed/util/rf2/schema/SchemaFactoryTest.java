@@ -1,10 +1,10 @@
 package org.ihtsdo.snomed.util.rf2.schema;
 
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.List;
 
 public class SchemaFactoryTest {
 
@@ -14,6 +14,35 @@ public class SchemaFactoryTest {
 	public void setUp() throws Exception {
 		schemaFactory = new SchemaFactory();
 	}
+	
+	@Test
+	public void testCreateSchemaBeanForOWLOntologyRefset() throws Exception {
+		String filename = "rel2_sRefset_OWLOntologyDelta_INT_20180731.txt";
+		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\towlExpression";
+		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
+		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
+
+		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		Assert.assertEquals("sct2_sRefset_OWLOntologyDelta_INT_20180731", schemaBean.getTableName());
+		List<Field> fields = schemaBean.getFields();
+		Assert.assertEquals(7, fields.size());
+		assertRelOwlRefsetFields(fields);
+	}
+	
+	@Test
+	public void testCreateSchemaBeanForOwlAxiomRefset() throws Exception {
+		String filename = "rel2_sRefset_OWLAxiomDelta_INT_20180731.txt";
+		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\towlExpression";
+		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
+		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
+
+		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		Assert.assertEquals("sct2_sRefset_OWLAxiomDelta_INT_20180731", schemaBean.getTableName());
+		List<Field> fields = schemaBean.getFields();
+		Assert.assertEquals(7, fields.size());
+		assertRelOwlRefsetFields(fields);
+	}
+	
 
 	@Test
 	public void testCreateSchemaBeanRelSimpleRefset() throws Exception {
@@ -471,6 +500,38 @@ public class SchemaFactoryTest {
 
 		schemaFactory.createSchemaBean(filename);
 	}
+	
+	
+	private void assertRelOwlRefsetFields(List<Field> fields) {
+		Assert.assertEquals("id", fields.get(0).getName());
+		Assert.assertEquals(DataType.UUID, fields.get(0).getType());
+		Assert.assertEquals(false, fields.get(0).isMandatory());
+
+		Assert.assertEquals("effectiveTime", fields.get(1).getName());
+		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
+		Assert.assertEquals(false, fields.get(1).isMandatory());
+
+		Assert.assertEquals("active", fields.get(2).getName());
+		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		Assert.assertEquals(true, fields.get(2).isMandatory());
+
+		Assert.assertEquals("moduleId", fields.get(3).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
+		Assert.assertEquals(true, fields.get(3).isMandatory());
+
+		Assert.assertEquals("refsetId", fields.get(4).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
+		Assert.assertEquals(true, fields.get(4).isMandatory());
+
+		Assert.assertEquals("referencedComponentId", fields.get(5).getName());
+		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(5).getType());
+		Assert.assertEquals(true, fields.get(5).isMandatory());
+		
+		Assert.assertEquals("owlExpression", fields.get(6).getName());
+		Assert.assertEquals(DataType.STRING, fields.get(6).getType());
+		Assert.assertEquals(true, fields.get(6).isMandatory());
+	}
+	
 
 	private void assertFirstSixRelSimpleRefsetFields(List<Field> fields) {
 		Assert.assertEquals("id", fields.get(0).getName());
