@@ -43,18 +43,16 @@ public class SchemaFactory {
 
 				boolean relFile = fileType.equals(REL_2);
 				boolean effectiveTimeMandatory = !relFile;
-				boolean isOwlRefset = false;
+				boolean isOwlRefset = isOwlRefsetFile(nameParts[2]);
 				DataType sctidType;
 				if (relFile) {
 					sctidType = DataType.SCTID_OR_UUID;
-					if (componentType == ComponentType.REFSET) {
+					//OWl refset
+					//INFRA-2448
+					if (isOwlRefset) {
+						fileType = SCT_2;
+					} else if (componentType == ComponentType.REFSET) {
 						fileType = DER_2;
-						//OWl refset
-						String contentSubType = nameParts[2];
-						if (contentSubType.startsWith(OWL)) {
-							fileType = SCT_2;
-							isOwlRefset = true;
-						}
 					} else {
 						// Core component
 						fileType = SCT_2;
@@ -154,6 +152,14 @@ public class SchemaFactory {
 			LOGGER.info(NO_MATCH_PREFIX + "incorrect file extension: {}", filename);
 		}
 		return schema;
+	}
+
+	private boolean isOwlRefsetFile(String contentSubType) {
+		//OWl refset
+		if (contentSubType.startsWith(OWL)) {
+			return true;
+		}
+		return false;
 	}
 
 	public void populateExtendedRefsetAdditionalFieldNames(TableSchema schema, String headerLine) {
