@@ -6,12 +6,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.*;
+
 public class SchemaFactoryTest {
 
 	private SchemaFactory schemaFactory;
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		schemaFactory = new SchemaFactory();
 	}
 	
@@ -22,10 +24,10 @@ public class SchemaFactoryTest {
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
 
-		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
-		Assert.assertEquals("sct2_sRefset_OWLOntologyDelta_INT_20180731", schemaBean.getTableName());
+		assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		assertEquals("sct2_sRefset_OWLOntologyDelta_INT_20180731", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(7, fields.size());
+		assertEquals(7, fields.size());
 		assertRelOwlRefsetFields(fields);
 	}
 	
@@ -36,10 +38,10 @@ public class SchemaFactoryTest {
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
 
-		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
-		Assert.assertEquals("sct2_sRefset_OWLAxiomDelta_INT_20180731", schemaBean.getTableName());
+		assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		assertEquals("sct2_sRefset_OWLAxiomDelta_INT_20180731", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(7, fields.size());
+		assertEquals(7, fields.size());
 		assertRelOwlRefsetFields(fields);
 	}
 	
@@ -52,10 +54,10 @@ public class SchemaFactoryTest {
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
 
-		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
-		Assert.assertEquals("der2_Refset_SimpleDelta_INT_20140831", schemaBean.getTableName());
+		assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		assertEquals("der2_Refset_SimpleDelta_INT_20140831", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(6, fields.size());
+		assertEquals(6, fields.size());
 		assertFirstSixRelSimpleRefsetFields(fields);
 	}
 
@@ -67,10 +69,10 @@ public class SchemaFactoryTest {
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
 
-		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
-		Assert.assertEquals("der2_Refset_SimpleDelta_INT_20140831", schemaBean.getTableName());
+		assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		assertEquals("der2_Refset_SimpleDelta_INT_20140831", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(6, fields.size());
+		assertEquals(6, fields.size());
 		assertFirstSixRelSimpleRefsetFields(fields);
 	}
 
@@ -82,10 +84,10 @@ public class SchemaFactoryTest {
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
 
-		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
-		Assert.assertEquals("der2_Refset_SimpleDelta_INT_20140831", schemaBean.getTableName());
+		assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		assertEquals("der2_Refset_SimpleDelta_INT_20140831", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(6, fields.size());
+		assertEquals(6, fields.size());
 		assertFirstSixDerSimpleRefsetFields(fields);
 	}
 
@@ -97,16 +99,16 @@ public class SchemaFactoryTest {
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
 
-		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
-		Assert.assertEquals("der2_cRefset_AttributeValueDelta_INT_20140831", schemaBean.getTableName());
+		assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		assertEquals("der2_cRefset_AttributeValueDelta_INT_20140831", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(7, fields.size());
+		assertEquals(7, fields.size());
 		assertFirstSixRelSimpleRefsetFields(fields);
 
 		// Assert additional fields
-		Assert.assertEquals("valueId", fields.get(6).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(6).getType());
-		Assert.assertEquals(true, fields.get(6).isMandatory());
+		assertEquals("valueId", fields.get(6).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(6).getType());
+		assertTrue(fields.get(6).isMandatory());
 	}
 
 	@Test
@@ -117,16 +119,16 @@ public class SchemaFactoryTest {
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
 
-		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
-		Assert.assertEquals("der2_cRefset_AttributeValueDelta_INT_20140831", schemaBean.getTableName());
+		assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		assertEquals("der2_cRefset_AttributeValueDelta_INT_20140831", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(7, fields.size());
+		assertEquals(7, fields.size());
 		assertFirstSixDerSimpleRefsetFields(fields);
 
 		// Assert additional fields
-		Assert.assertEquals("valueId", fields.get(6).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(6).getType());
-		Assert.assertEquals(true, fields.get(6).isMandatory());
+		assertEquals("valueId", fields.get(6).getName());
+		assertEquals(DataType.SCTID, fields.get(6).getType());
+		assertTrue(fields.get(6).isMandatory());
 	}
 
 	@Test
@@ -147,40 +149,40 @@ public class SchemaFactoryTest {
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
 
-		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
-		Assert.assertEquals("der2_iisssccRefset_ExtendedMapDelta_INT_20140131", schemaBean.getTableName());
+		assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		assertEquals("der2_iisssccRefset_ExtendedMapDelta_INT_20140131", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(13, fields.size());
+		assertEquals(13, fields.size());
 		assertFirstSixRelSimpleRefsetFields(fields);
 
 		// Assert additional fields
-		Assert.assertEquals("mapGroup", fields.get(6).getName());
-		Assert.assertEquals(DataType.INTEGER, fields.get(6).getType());
-		Assert.assertEquals(true, fields.get(6).isMandatory());
+		assertEquals("mapGroup", fields.get(6).getName());
+		assertEquals(DataType.INTEGER, fields.get(6).getType());
+		assertTrue(fields.get(6).isMandatory());
 
-		Assert.assertEquals("mapPriority", fields.get(7).getName());
-		Assert.assertEquals(DataType.INTEGER, fields.get(7).getType());
-		Assert.assertEquals(true, fields.get(7).isMandatory());
+		assertEquals("mapPriority", fields.get(7).getName());
+		assertEquals(DataType.INTEGER, fields.get(7).getType());
+		assertTrue(fields.get(7).isMandatory());
 
-		Assert.assertEquals("mapRule", fields.get(8).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(8).getType());
-		Assert.assertEquals(true, fields.get(8).isMandatory());
+		assertEquals("mapRule", fields.get(8).getName());
+		assertEquals(DataType.STRING, fields.get(8).getType());
+		assertTrue(fields.get(8).isMandatory());
 
-		Assert.assertEquals("mapAdvice", fields.get(9).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(9).getType());
-		Assert.assertEquals(true, fields.get(9).isMandatory());
+		assertEquals("mapAdvice", fields.get(9).getName());
+		assertEquals(DataType.STRING, fields.get(9).getType());
+		assertTrue(fields.get(9).isMandatory());
 
-		Assert.assertEquals("mapTarget", fields.get(10).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(10).getType());
-		Assert.assertEquals(true, fields.get(10).isMandatory());
+		assertEquals("mapTarget", fields.get(10).getName());
+		assertEquals(DataType.STRING, fields.get(10).getType());
+		assertTrue(fields.get(10).isMandatory());
 
-		Assert.assertEquals("correlationId", fields.get(11).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(11).getType());
-		Assert.assertEquals(true, fields.get(11).isMandatory());
+		assertEquals("correlationId", fields.get(11).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(11).getType());
+		assertTrue(fields.get(11).isMandatory());
 
-		Assert.assertEquals("mapCategoryId", fields.get(12).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(12).getType());
-		Assert.assertEquals(true, fields.get(12).isMandatory());
+		assertEquals("mapCategoryId", fields.get(12).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(12).getType());
+		assertTrue(fields.get(12).isMandatory());
 	}
 
 	@Test
@@ -192,40 +194,40 @@ public class SchemaFactoryTest {
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
 
-		Assert.assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
-		Assert.assertEquals("der2_iisssccRefset_ExtendedMapDelta_INT_20140131", schemaBean.getTableName());
+		assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
+		assertEquals("der2_iisssccRefset_ExtendedMapDelta_INT_20140131", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(13, fields.size());
+		assertEquals(13, fields.size());
 		assertFirstSixDerSimpleRefsetFields(fields);
 
 		// Assert additional fields
-		Assert.assertEquals("mapGroup", fields.get(6).getName());
-		Assert.assertEquals(DataType.INTEGER, fields.get(6).getType());
-		Assert.assertEquals(true, fields.get(6).isMandatory());
+		assertEquals("mapGroup", fields.get(6).getName());
+		assertEquals(DataType.INTEGER, fields.get(6).getType());
+		assertTrue(fields.get(6).isMandatory());
 
-		Assert.assertEquals("mapPriority", fields.get(7).getName());
-		Assert.assertEquals(DataType.INTEGER, fields.get(7).getType());
-		Assert.assertEquals(true, fields.get(7).isMandatory());
+		assertEquals("mapPriority", fields.get(7).getName());
+		assertEquals(DataType.INTEGER, fields.get(7).getType());
+		assertTrue(fields.get(7).isMandatory());
 
-		Assert.assertEquals("mapRule", fields.get(8).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(8).getType());
-		Assert.assertEquals(true, fields.get(8).isMandatory());
+		assertEquals("mapRule", fields.get(8).getName());
+		assertEquals(DataType.STRING, fields.get(8).getType());
+		assertTrue(fields.get(8).isMandatory());
 
-		Assert.assertEquals("mapAdvice", fields.get(9).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(9).getType());
-		Assert.assertEquals(true, fields.get(9).isMandatory());
+		assertEquals("mapAdvice", fields.get(9).getName());
+		assertEquals(DataType.STRING, fields.get(9).getType());
+		assertTrue(fields.get(9).isMandatory());
 
-		Assert.assertEquals("mapTarget", fields.get(10).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(10).getType());
-		Assert.assertEquals(true, fields.get(10).isMandatory());
+		assertEquals("mapTarget", fields.get(10).getName());
+		assertEquals(DataType.STRING, fields.get(10).getType());
+		assertTrue(fields.get(10).isMandatory());
 
-		Assert.assertEquals("correlationId", fields.get(11).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(11).getType());
-		Assert.assertEquals(true, fields.get(11).isMandatory());
+		assertEquals("correlationId", fields.get(11).getName());
+		assertEquals(DataType.SCTID, fields.get(11).getType());
+		assertTrue(fields.get(11).isMandatory());
 
-		Assert.assertEquals("mapCategoryId", fields.get(12).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(12).getType());
-		Assert.assertEquals(true, fields.get(12).isMandatory());
+		assertEquals("mapCategoryId", fields.get(12).getName());
+		assertEquals(DataType.SCTID, fields.get(12).getType());
+		assertTrue(fields.get(12).isMandatory());
 	}
 
 	@Test
@@ -234,30 +236,30 @@ public class SchemaFactoryTest {
 
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 
-		Assert.assertEquals(ComponentType.CONCEPT, schemaBean.getComponentType());
-		Assert.assertEquals("sct2_Concept_Delta_INT_20140131", schemaBean.getTableName());
+		assertEquals(ComponentType.CONCEPT, schemaBean.getComponentType());
+		assertEquals("sct2_Concept_Delta_INT_20140131", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(5, fields.size());
+		assertEquals(5, fields.size());
 
-		Assert.assertEquals("id", fields.get(0).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(0).getType());
-		Assert.assertEquals(true, fields.get(0).isMandatory());
+		assertEquals("id", fields.get(0).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(0).getType());
+		assertTrue(fields.get(0).isMandatory());
 
-		Assert.assertEquals("effectiveTime", fields.get(1).getName());
-		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
-		Assert.assertEquals(false, fields.get(1).isMandatory());
+		assertEquals("effectiveTime", fields.get(1).getName());
+		assertEquals(DataType.TIME, fields.get(1).getType());
+		assertFalse(fields.get(1).isMandatory());
 
-		Assert.assertEquals("active", fields.get(2).getName());
-		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
-		Assert.assertEquals(true, fields.get(2).isMandatory());
+		assertEquals("active", fields.get(2).getName());
+		assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		assertTrue(fields.get(2).isMandatory());
 
-		Assert.assertEquals("moduleId", fields.get(3).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
-		Assert.assertEquals(true, fields.get(3).isMandatory());
+		assertEquals("moduleId", fields.get(3).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
+		assertTrue(fields.get(3).isMandatory());
 
-		Assert.assertEquals("definitionStatusId", fields.get(4).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
-		Assert.assertEquals(true, fields.get(4).isMandatory());
+		assertEquals("definitionStatusId", fields.get(4).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
+		assertTrue(fields.get(4).isMandatory());
 	}
 
 	@Test
@@ -266,30 +268,30 @@ public class SchemaFactoryTest {
 
 		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
 
-		Assert.assertEquals(ComponentType.CONCEPT, schemaBean.getComponentType());
-		Assert.assertEquals("sct2_Concept_Delta_INT_20140131", schemaBean.getTableName());
+		assertEquals(ComponentType.CONCEPT, schemaBean.getComponentType());
+		assertEquals("sct2_Concept_Delta_INT_20140131", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(5, fields.size());
+		assertEquals(5, fields.size());
 
-		Assert.assertEquals("id", fields.get(0).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(0).getType());
-		Assert.assertEquals(true, fields.get(0).isMandatory());
+		assertEquals("id", fields.get(0).getName());
+		assertEquals(DataType.SCTID, fields.get(0).getType());
+		assertTrue(fields.get(0).isMandatory());
 
-		Assert.assertEquals("effectiveTime", fields.get(1).getName());
-		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
-		Assert.assertEquals(true, fields.get(1).isMandatory());
+		assertEquals("effectiveTime", fields.get(1).getName());
+		assertEquals(DataType.TIME, fields.get(1).getType());
+		assertTrue(fields.get(1).isMandatory());
 
-		Assert.assertEquals("active", fields.get(2).getName());
-		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
-		Assert.assertEquals(true, fields.get(2).isMandatory());
+		assertEquals("active", fields.get(2).getName());
+		assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		assertTrue(fields.get(2).isMandatory());
 
-		Assert.assertEquals("moduleId", fields.get(3).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(3).getType());
-		Assert.assertEquals(true, fields.get(3).isMandatory());
+		assertEquals("moduleId", fields.get(3).getName());
+		assertEquals(DataType.SCTID, fields.get(3).getType());
+		assertTrue(fields.get(3).isMandatory());
 
-		Assert.assertEquals("definitionStatusId", fields.get(4).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(4).getType());
-		Assert.assertEquals(true, fields.get(4).isMandatory());
+		assertEquals("definitionStatusId", fields.get(4).getName());
+		assertEquals(DataType.SCTID, fields.get(4).getType());
+		assertTrue(fields.get(4).isMandatory());
 	}
 
 	@Test
@@ -300,46 +302,46 @@ public class SchemaFactoryTest {
 
 		Assert.assertNotNull("tableSchema should not be null", schemaBean);
 
-		Assert.assertEquals(ComponentType.DESCRIPTION, schemaBean.getComponentType());
-		Assert.assertEquals("sct2_Description_Deltaen_INT_20140731", schemaBean.getTableName());
+		assertEquals(ComponentType.DESCRIPTION, schemaBean.getComponentType());
+		assertEquals("sct2_Description_Deltaen_INT_20140731", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(9, fields.size());
+		assertEquals(9, fields.size());
 
-		Assert.assertEquals("id", fields.get(0).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(0).getType());
-		Assert.assertEquals(true, fields.get(0).isMandatory());
+		assertEquals("id", fields.get(0).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(0).getType());
+		assertTrue(fields.get(0).isMandatory());
 
-		Assert.assertEquals("effectiveTime", fields.get(1).getName());
-		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
-		Assert.assertEquals(false, fields.get(1).isMandatory());
+		assertEquals("effectiveTime", fields.get(1).getName());
+		assertEquals(DataType.TIME, fields.get(1).getType());
+		assertFalse(fields.get(1).isMandatory());
 
-		Assert.assertEquals("active", fields.get(2).getName());
-		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
-		Assert.assertEquals(true, fields.get(2).isMandatory());
+		assertEquals("active", fields.get(2).getName());
+		assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		assertTrue(fields.get(2).isMandatory());
 
-		Assert.assertEquals("moduleId", fields.get(3).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
-		Assert.assertEquals(true, fields.get(3).isMandatory());
+		assertEquals("moduleId", fields.get(3).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
+		assertTrue(fields.get(3).isMandatory());
 
-		Assert.assertEquals("conceptId", fields.get(4).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
-		Assert.assertEquals(true, fields.get(4).isMandatory());
+		assertEquals("conceptId", fields.get(4).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
+		assertTrue(fields.get(4).isMandatory());
 
-		Assert.assertEquals("languageCode", fields.get(5).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(5).getType());
-		Assert.assertEquals(true, fields.get(5).isMandatory());
+		assertEquals("languageCode", fields.get(5).getName());
+		assertEquals(DataType.STRING, fields.get(5).getType());
+		assertTrue(fields.get(5).isMandatory());
 
-		Assert.assertEquals("typeId", fields.get(6).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(6).getType());
-		Assert.assertEquals(true, fields.get(6).isMandatory());
+		assertEquals("typeId", fields.get(6).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(6).getType());
+		assertTrue(fields.get(6).isMandatory());
 
-		Assert.assertEquals("term", fields.get(7).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(7).getType());
-		Assert.assertEquals(true, fields.get(7).isMandatory());
+		assertEquals("term", fields.get(7).getName());
+		assertEquals(DataType.STRING, fields.get(7).getType());
+		assertTrue(fields.get(7).isMandatory());
 
-		Assert.assertEquals("caseSignificanceId", fields.get(8).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(8).getType());
-		Assert.assertEquals(true, fields.get(8).isMandatory());
+		assertEquals("caseSignificanceId", fields.get(8).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(8).getType());
+		assertTrue(fields.get(8).isMandatory());
 	}
 
 	@Test
@@ -350,47 +352,47 @@ public class SchemaFactoryTest {
 
 		Assert.assertNotNull("tableSchema should not be null", schemaBean);
 
-		Assert.assertEquals(ComponentType.DESCRIPTION, schemaBean.getComponentType());
-		Assert.assertEquals("sct2_Description_Deltaen_INT_20140731", schemaBean.getTableName());
+		assertEquals(ComponentType.DESCRIPTION, schemaBean.getComponentType());
+		assertEquals("sct2_Description_Deltaen_INT_20140731", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(9, fields.size());
+		assertEquals(9, fields.size());
 
-		Assert.assertEquals("id", fields.get(0).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(0).getType());
-		Assert.assertEquals(true, fields.get(0).isMandatory());
+		assertEquals("id", fields.get(0).getName());
+		assertEquals(DataType.SCTID, fields.get(0).getType());
+		assertTrue(fields.get(0).isMandatory());
 
-		Assert.assertEquals("effectiveTime", fields.get(1).getName());
-		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
-		Assert.assertEquals(true, fields.get(1).isMandatory());
-		Assert.assertEquals(true, fields.get(1).isMandatory());
+		assertEquals("effectiveTime", fields.get(1).getName());
+		assertEquals(DataType.TIME, fields.get(1).getType());
+		assertTrue(fields.get(1).isMandatory());
+		assertTrue(fields.get(1).isMandatory());
 
-		Assert.assertEquals("active", fields.get(2).getName());
-		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
-		Assert.assertEquals(true, fields.get(2).isMandatory());
+		assertEquals("active", fields.get(2).getName());
+		assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		assertTrue(fields.get(2).isMandatory());
 
-		Assert.assertEquals("moduleId", fields.get(3).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(3).getType());
-		Assert.assertEquals(true, fields.get(3).isMandatory());
+		assertEquals("moduleId", fields.get(3).getName());
+		assertEquals(DataType.SCTID, fields.get(3).getType());
+		assertTrue(fields.get(3).isMandatory());
 
-		Assert.assertEquals("conceptId", fields.get(4).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(4).getType());
-		Assert.assertEquals(true, fields.get(4).isMandatory());
+		assertEquals("conceptId", fields.get(4).getName());
+		assertEquals(DataType.SCTID, fields.get(4).getType());
+		assertTrue(fields.get(4).isMandatory());
 
-		Assert.assertEquals("languageCode", fields.get(5).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(5).getType());
-		Assert.assertEquals(true, fields.get(5).isMandatory());
+		assertEquals("languageCode", fields.get(5).getName());
+		assertEquals(DataType.STRING, fields.get(5).getType());
+		assertTrue(fields.get(5).isMandatory());
 
-		Assert.assertEquals("typeId", fields.get(6).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(6).getType());
-		Assert.assertEquals(true, fields.get(6).isMandatory());
+		assertEquals("typeId", fields.get(6).getName());
+		assertEquals(DataType.SCTID, fields.get(6).getType());
+		assertTrue(fields.get(6).isMandatory());
 
-		Assert.assertEquals("term", fields.get(7).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(7).getType());
-		Assert.assertEquals(true, fields.get(7).isMandatory());
+		assertEquals("term", fields.get(7).getName());
+		assertEquals(DataType.STRING, fields.get(7).getType());
+		assertTrue(fields.get(7).isMandatory());
 
-		Assert.assertEquals("caseSignificanceId", fields.get(8).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(8).getType());
-		Assert.assertEquals(true, fields.get(8).isMandatory());
+		assertEquals("caseSignificanceId", fields.get(8).getName());
+		assertEquals(DataType.SCTID, fields.get(8).getType());
+		assertTrue(fields.get(8).isMandatory());
 	}
 
 	@Test
@@ -401,46 +403,46 @@ public class SchemaFactoryTest {
 
 		Assert.assertNotNull("tableSchema should not be null", schemaBean);
 
-		Assert.assertEquals(ComponentType.TEXT_DEFINITION, schemaBean.getComponentType());
-		Assert.assertEquals("sct2_TextDefinition_Deltaen_INT_20140731", schemaBean.getTableName());
+		assertEquals(ComponentType.TEXT_DEFINITION, schemaBean.getComponentType());
+		assertEquals("sct2_TextDefinition_Deltaen_INT_20140731", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(9, fields.size());
+		assertEquals(9, fields.size());
 
-		Assert.assertEquals("id", fields.get(0).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(0).getType());
-		Assert.assertEquals(true, fields.get(0).isMandatory());
+		assertEquals("id", fields.get(0).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(0).getType());
+		assertTrue(fields.get(0).isMandatory());
 
-		Assert.assertEquals("effectiveTime", fields.get(1).getName());
-		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
-		Assert.assertEquals(false, fields.get(1).isMandatory());
+		assertEquals("effectiveTime", fields.get(1).getName());
+		assertEquals(DataType.TIME, fields.get(1).getType());
+		assertFalse(fields.get(1).isMandatory());
 
-		Assert.assertEquals("active", fields.get(2).getName());
-		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
-		Assert.assertEquals(true, fields.get(2).isMandatory());
+		assertEquals("active", fields.get(2).getName());
+		assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		assertTrue(fields.get(2).isMandatory());
 
-		Assert.assertEquals("moduleId", fields.get(3).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
-		Assert.assertEquals(true, fields.get(3).isMandatory());
+		assertEquals("moduleId", fields.get(3).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
+		assertTrue(fields.get(3).isMandatory());
 
-		Assert.assertEquals("conceptId", fields.get(4).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
-		Assert.assertEquals(true, fields.get(4).isMandatory());
+		assertEquals("conceptId", fields.get(4).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
+		assertTrue(fields.get(4).isMandatory());
 
-		Assert.assertEquals("languageCode", fields.get(5).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(5).getType());
-		Assert.assertEquals(true, fields.get(5).isMandatory());
+		assertEquals("languageCode", fields.get(5).getName());
+		assertEquals(DataType.STRING, fields.get(5).getType());
+		assertTrue(fields.get(5).isMandatory());
 
-		Assert.assertEquals("typeId", fields.get(6).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(6).getType());
-		Assert.assertEquals(true, fields.get(6).isMandatory());
+		assertEquals("typeId", fields.get(6).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(6).getType());
+		assertTrue(fields.get(6).isMandatory());
 
-		Assert.assertEquals("term", fields.get(7).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(7).getType());
-		Assert.assertEquals(true, fields.get(7).isMandatory());
+		assertEquals("term", fields.get(7).getName());
+		assertEquals(DataType.STRING, fields.get(7).getType());
+		assertTrue(fields.get(7).isMandatory());
 
-		Assert.assertEquals("caseSignificanceId", fields.get(8).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(8).getType());
-		Assert.assertEquals(true, fields.get(8).isMandatory());
+		assertEquals("caseSignificanceId", fields.get(8).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(8).getType());
+		assertTrue(fields.get(8).isMandatory());
 	}
 
 	@Test
@@ -451,47 +453,82 @@ public class SchemaFactoryTest {
 
 		Assert.assertNotNull("tableSchema should not be null", schemaBean);
 
-		Assert.assertEquals(ComponentType.TEXT_DEFINITION, schemaBean.getComponentType());
-		Assert.assertEquals("sct2_TextDefinition_Deltaen_INT_20140731", schemaBean.getTableName());
+		assertEquals(ComponentType.TEXT_DEFINITION, schemaBean.getComponentType());
+		assertEquals("sct2_TextDefinition_Deltaen_INT_20140731", schemaBean.getTableName());
 		List<Field> fields = schemaBean.getFields();
-		Assert.assertEquals(9, fields.size());
+		assertEquals(9, fields.size());
 
-		Assert.assertEquals("id", fields.get(0).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(0).getType());
-		Assert.assertEquals(true, fields.get(0).isMandatory());
+		assertEquals("id", fields.get(0).getName());
+		assertEquals(DataType.SCTID, fields.get(0).getType());
+		assertTrue(fields.get(0).isMandatory());
 
-		Assert.assertEquals("effectiveTime", fields.get(1).getName());
-		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
-		Assert.assertEquals(true, fields.get(1).isMandatory());
-		Assert.assertEquals(true, fields.get(1).isMandatory());
+		assertEquals("effectiveTime", fields.get(1).getName());
+		assertEquals(DataType.TIME, fields.get(1).getType());
+		assertTrue(fields.get(1).isMandatory());
+		assertTrue(fields.get(1).isMandatory());
 
-		Assert.assertEquals("active", fields.get(2).getName());
-		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
-		Assert.assertEquals(true, fields.get(2).isMandatory());
+		assertEquals("active", fields.get(2).getName());
+		assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		assertTrue(fields.get(2).isMandatory());
 
-		Assert.assertEquals("moduleId", fields.get(3).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(3).getType());
-		Assert.assertEquals(true, fields.get(3).isMandatory());
+		assertEquals("moduleId", fields.get(3).getName());
+		assertEquals(DataType.SCTID, fields.get(3).getType());
+		assertTrue(fields.get(3).isMandatory());
 
-		Assert.assertEquals("conceptId", fields.get(4).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(4).getType());
-		Assert.assertEquals(true, fields.get(4).isMandatory());
+		assertEquals("conceptId", fields.get(4).getName());
+		assertEquals(DataType.SCTID, fields.get(4).getType());
+		assertTrue(fields.get(4).isMandatory());
 
-		Assert.assertEquals("languageCode", fields.get(5).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(5).getType());
-		Assert.assertEquals(true, fields.get(5).isMandatory());
+		assertEquals("languageCode", fields.get(5).getName());
+		assertEquals(DataType.STRING, fields.get(5).getType());
+		assertTrue(fields.get(5).isMandatory());
 
-		Assert.assertEquals("typeId", fields.get(6).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(6).getType());
-		Assert.assertEquals(true, fields.get(6).isMandatory());
+		assertEquals("typeId", fields.get(6).getName());
+		assertEquals(DataType.SCTID, fields.get(6).getType());
+		assertTrue(fields.get(6).isMandatory());
 
-		Assert.assertEquals("term", fields.get(7).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(7).getType());
-		Assert.assertEquals(true, fields.get(7).isMandatory());
+		assertEquals("term", fields.get(7).getName());
+		assertEquals(DataType.STRING, fields.get(7).getType());
+		assertTrue(fields.get(7).isMandatory());
 
-		Assert.assertEquals("caseSignificanceId", fields.get(8).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(8).getType());
-		Assert.assertEquals(true, fields.get(8).isMandatory());
+		assertEquals("caseSignificanceId", fields.get(8).getName());
+		assertEquals(DataType.SCTID, fields.get(8).getType());
+		assertTrue(fields.get(8).isMandatory());
+	}
+
+	@Test
+	public void testCreateRelationshipConcreteValuesBeanPost() throws Exception {
+		String filename = "sct2_RelationshipConcreteValues_Delta_INT_20210131.txt";
+
+		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
+
+		Assert.assertNotNull("tableSchema should not be null", schemaBean);
+
+		assertEquals(ComponentType.RELATIONSHIP_CONCRETE_VALUES, schemaBean.getComponentType());
+		assertEquals("sct2_RelationshipConcreteValues_Delta_INT_20210131", schemaBean.getTableName());
+		List<Field> fields = schemaBean.getFields();
+		assertEquals(10, fields.size());
+
+		assertEquals("value", fields.get(5).getName());
+		assertEquals(DataType.STRING, fields.get(5).getType());
+	}
+
+
+	@Test
+	public void testCreateRelationshipBeanPost() throws Exception {
+		String filename = "sct2_Relationship_Delta_INT_20210131.txt";
+
+		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
+
+		Assert.assertNotNull("tableSchema should not be null", schemaBean);
+
+		assertEquals(ComponentType.RELATIONSHIP, schemaBean.getComponentType());
+		assertEquals("sct2_Relationship_Delta_INT_20210131", schemaBean.getTableName());
+		List<Field> fields = schemaBean.getFields();
+		assertEquals(10, fields.size());
+
+		assertEquals("destinationId", fields.get(5).getName());
+		assertEquals(DataType.SCTID, fields.get(5).getType());
 	}
 
 	@Test(expected = FileRecognitionException.class)
@@ -503,86 +540,86 @@ public class SchemaFactoryTest {
 	
 	
 	private void assertRelOwlRefsetFields(List<Field> fields) {
-		Assert.assertEquals("id", fields.get(0).getName());
-		Assert.assertEquals(DataType.UUID, fields.get(0).getType());
-		Assert.assertEquals(false, fields.get(0).isMandatory());
+		assertEquals("id", fields.get(0).getName());
+		assertEquals(DataType.UUID, fields.get(0).getType());
+		assertFalse(fields.get(0).isMandatory());
 
-		Assert.assertEquals("effectiveTime", fields.get(1).getName());
-		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
-		Assert.assertEquals(false, fields.get(1).isMandatory());
+		assertEquals("effectiveTime", fields.get(1).getName());
+		assertEquals(DataType.TIME, fields.get(1).getType());
+		assertFalse(fields.get(1).isMandatory());
 
-		Assert.assertEquals("active", fields.get(2).getName());
-		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
-		Assert.assertEquals(true, fields.get(2).isMandatory());
+		assertEquals("active", fields.get(2).getName());
+		assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		assertTrue(fields.get(2).isMandatory());
 
-		Assert.assertEquals("moduleId", fields.get(3).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
-		Assert.assertEquals(true, fields.get(3).isMandatory());
+		assertEquals("moduleId", fields.get(3).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
+		assertTrue(fields.get(3).isMandatory());
 
-		Assert.assertEquals("refsetId", fields.get(4).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
-		Assert.assertEquals(true, fields.get(4).isMandatory());
+		assertEquals("refsetId", fields.get(4).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
+		assertTrue(fields.get(4).isMandatory());
 
-		Assert.assertEquals("referencedComponentId", fields.get(5).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(5).getType());
-		Assert.assertEquals(true, fields.get(5).isMandatory());
+		assertEquals("referencedComponentId", fields.get(5).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(5).getType());
+		assertTrue(fields.get(5).isMandatory());
 		
-		Assert.assertEquals("owlExpression", fields.get(6).getName());
-		Assert.assertEquals(DataType.STRING, fields.get(6).getType());
-		Assert.assertEquals(true, fields.get(6).isMandatory());
+		assertEquals("owlExpression", fields.get(6).getName());
+		assertEquals(DataType.STRING, fields.get(6).getType());
+		assertTrue(fields.get(6).isMandatory());
 	}
 	
 
 	private void assertFirstSixRelSimpleRefsetFields(List<Field> fields) {
-		Assert.assertEquals("id", fields.get(0).getName());
-		Assert.assertEquals(DataType.UUID, fields.get(0).getType());
-		Assert.assertEquals(false, fields.get(0).isMandatory());
+		assertEquals("id", fields.get(0).getName());
+		assertEquals(DataType.UUID, fields.get(0).getType());
+		assertFalse(fields.get(0).isMandatory());
 
-		Assert.assertEquals("effectiveTime", fields.get(1).getName());
-		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
-		Assert.assertEquals(false, fields.get(1).isMandatory());
+		assertEquals("effectiveTime", fields.get(1).getName());
+		assertEquals(DataType.TIME, fields.get(1).getType());
+		assertFalse(fields.get(1).isMandatory());
 
-		Assert.assertEquals("active", fields.get(2).getName());
-		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
-		Assert.assertEquals(true, fields.get(2).isMandatory());
+		assertEquals("active", fields.get(2).getName());
+		assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		assertTrue(fields.get(2).isMandatory());
 
-		Assert.assertEquals("moduleId", fields.get(3).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
-		Assert.assertEquals(true, fields.get(3).isMandatory());
+		assertEquals("moduleId", fields.get(3).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(3).getType());
+		assertTrue(fields.get(3).isMandatory());
 
-		Assert.assertEquals("refsetId", fields.get(4).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
-		Assert.assertEquals(true, fields.get(4).isMandatory());
+		assertEquals("refsetId", fields.get(4).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(4).getType());
+		assertTrue(fields.get(4).isMandatory());
 
-		Assert.assertEquals("referencedComponentId", fields.get(5).getName());
-		Assert.assertEquals(DataType.SCTID_OR_UUID, fields.get(5).getType());
-		Assert.assertEquals(true, fields.get(5).isMandatory());
+		assertEquals("referencedComponentId", fields.get(5).getName());
+		assertEquals(DataType.SCTID_OR_UUID, fields.get(5).getType());
+		assertTrue(fields.get(5).isMandatory());
 	}
 
 	private void assertFirstSixDerSimpleRefsetFields(List<Field> fields) {
-		Assert.assertEquals("id", fields.get(0).getName());
-		Assert.assertEquals(DataType.UUID, fields.get(0).getType());
-		Assert.assertEquals(true, fields.get(0).isMandatory());
+		assertEquals("id", fields.get(0).getName());
+		assertEquals(DataType.UUID, fields.get(0).getType());
+		assertTrue(fields.get(0).isMandatory());
 
-		Assert.assertEquals("effectiveTime", fields.get(1).getName());
-		Assert.assertEquals(DataType.TIME, fields.get(1).getType());
-		Assert.assertEquals(true, fields.get(1).isMandatory());
+		assertEquals("effectiveTime", fields.get(1).getName());
+		assertEquals(DataType.TIME, fields.get(1).getType());
+		assertTrue(fields.get(1).isMandatory());
 
-		Assert.assertEquals("active", fields.get(2).getName());
-		Assert.assertEquals(DataType.BOOLEAN, fields.get(2).getType());
-		Assert.assertEquals(true, fields.get(2).isMandatory());
+		assertEquals("active", fields.get(2).getName());
+		assertEquals(DataType.BOOLEAN, fields.get(2).getType());
+		assertTrue(fields.get(2).isMandatory());
 
-		Assert.assertEquals("moduleId", fields.get(3).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(3).getType());
-		Assert.assertEquals(true, fields.get(3).isMandatory());
+		assertEquals("moduleId", fields.get(3).getName());
+		assertEquals(DataType.SCTID, fields.get(3).getType());
+		assertTrue(fields.get(3).isMandatory());
 
-		Assert.assertEquals("refsetId", fields.get(4).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(4).getType());
-		Assert.assertEquals(true, fields.get(4).isMandatory());
+		assertEquals("refsetId", fields.get(4).getName());
+		assertEquals(DataType.SCTID, fields.get(4).getType());
+		assertTrue(fields.get(4).isMandatory());
 
-		Assert.assertEquals("referencedComponentId", fields.get(5).getName());
-		Assert.assertEquals(DataType.SCTID, fields.get(5).getType());
-		Assert.assertEquals(true, fields.get(5).isMandatory());
+		assertEquals("referencedComponentId", fields.get(5).getName());
+		assertEquals(DataType.SCTID, fields.get(5).getType());
+		assertTrue(fields.get(5).isMandatory());
 	}
 
 }

@@ -117,15 +117,20 @@ public class SchemaFactory {
 								.field("term", DataType.STRING)
 								.field("caseSignificanceId", sctidType);
 
-					} else if (componentType == ComponentType.STATED_RELATIONSHIP || componentType == ComponentType.RELATIONSHIP) {
+					} else if (componentType == ComponentType.STATED_RELATIONSHIP || componentType == ComponentType.RELATIONSHIP
+							|| componentType == ComponentType.RELATIONSHIP_CONCRETE_VALUES) {
 						schema = new TableSchema(componentType, filenameNoExtension)
 								.field("id", sctidType)
 								.field("effectiveTime", DataType.TIME, effectiveTimeMandatory)
 								.field("active", DataType.BOOLEAN)
 								.field("moduleId", sctidType)
-								.field("sourceId", sctidType)
-								.field("destinationId", sctidType)
-								.field("relationshipGroup", DataType.INTEGER)
+								.field("sourceId", sctidType);
+						if (componentType == ComponentType.RELATIONSHIP_CONCRETE_VALUES) {
+							schema.field("value", DataType.STRING);
+						} else {
+							schema.field("destinationId", sctidType);
+						}
+						schema.field("relationshipGroup", DataType.INTEGER)
 								.field("typeId", sctidType)
 								.field("characteristicTypeId", sctidType)
 								.field("modifierId", sctidType);

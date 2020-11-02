@@ -2,7 +2,14 @@ package org.ihtsdo.snomed.util.rf2.schema;
 
 public enum ComponentType {
 
-	CONCEPT("Concept"), DESCRIPTION("Description"), TEXT_DEFINITION("TextDefinition"), STATED_RELATIONSHIP("StatedRelationship"), RELATIONSHIP("Relationship"), IDENTIFIER("Identifier"), REFSET("Refset");
+	CONCEPT("Concept"),
+	DESCRIPTION("Description"),
+	TEXT_DEFINITION("TextDefinition"),
+	STATED_RELATIONSHIP("StatedRelationship"),
+	RELATIONSHIP("Relationship"),
+	RELATIONSHIP_CONCRETE_VALUES("RelationshipConcreteValues"),
+	IDENTIFIER("Identifier"),
+	REFSET("Refset");
 
 	private String name;
 
@@ -32,6 +39,8 @@ public enum ComponentType {
 			type = ComponentType.STATED_RELATIONSHIP;
 		} else if (contentTypeString.equals(ComponentType.RELATIONSHIP.toString())) {
 			type = ComponentType.RELATIONSHIP;
+		} else if (contentTypeString.equals(ComponentType.RELATIONSHIP_CONCRETE_VALUES.toString())) {
+			type = ComponentType.RELATIONSHIP_CONCRETE_VALUES;
 		} else if (contentTypeString.equals(ComponentType.IDENTIFIER.toString())) {
 			type = ComponentType.IDENTIFIER;
 		} else if (contentTypeString.endsWith(ComponentType.REFSET.toString())) {
