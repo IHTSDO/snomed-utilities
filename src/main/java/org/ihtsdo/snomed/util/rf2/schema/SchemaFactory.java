@@ -1,6 +1,8 @@
 package org.ihtsdo.snomed.util.rf2.schema;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +45,7 @@ public class SchemaFactory {
 
 				boolean relFile = fileType.equals(REL_2);
 				boolean effectiveTimeMandatory = !relFile;
-				boolean isOwlRefset = isOwlRefsetFile(nameParts[2]);
+				boolean isOwlRefset = isOwlRefsetFile(nameParts[1], nameParts[2]);
 				DataType sctidType;
 				if (relFile) {
 					sctidType = DataType.SCTID_OR_UUID;
@@ -159,12 +161,13 @@ public class SchemaFactory {
 		return schema;
 	}
 
-	private boolean isOwlRefsetFile(String contentSubType) {
+	private boolean isOwlRefsetFile(String contentType, String contentSubType) {
 		//OWl refset
-		if (contentSubType.startsWith(OWL)) {
-			return true;
-		}
-		return false;
+		String owlPattern = "^.*(OWLExpression|OWLAxiom|OWLOntology)+(Delta|Snapshot|Full)$";
+		Pattern pattern = Pattern.compile(owlPattern);
+		Matcher matcher = pattern.matcher(contentSubType);
+
+		return contentType.equals("sRefset") && matcher.matches();
 	}
 
 	public void populateExtendedRefsetAdditionalFieldNames(TableSchema schema, String headerLine) {
