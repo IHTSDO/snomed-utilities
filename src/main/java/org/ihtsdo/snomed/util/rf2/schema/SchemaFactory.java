@@ -24,6 +24,8 @@ public class SchemaFactory {
 	private static final String NO_MATCH_PREFIX = "Input file not RF2, ";
 	private static final Logger LOGGER = LoggerFactory.getLogger(SchemaFactory.class);
 
+	private static final Pattern OWL_REFSET_PATTERN = Pattern.compile("^.*(OWLExpression|OWLAxiom|OWLOntology)+(Delta|Snapshot|Full)$");
+
 	public TableSchema createSchemaBean(String filename) throws FileRecognitionException {
 		TableSchema schema = null;
 
@@ -162,12 +164,7 @@ public class SchemaFactory {
 	}
 
 	private boolean isOwlRefsetFile(String contentType, String contentSubType) {
-		//OWl refset
-		String owlPattern = "^.*(OWLExpression|OWLAxiom|OWLOntology)+(Delta|Snapshot|Full)$";
-		Pattern pattern = Pattern.compile(owlPattern);
-		Matcher matcher = pattern.matcher(contentSubType);
-
-		return contentType.equals("sRefset") && matcher.matches();
+		return contentType.equals("sRefset") && (contentSubType.startsWith(OWL) || OWL_REFSET_PATTERN.matcher(contentSubType).matches());
 	}
 
 	public void populateExtendedRefsetAdditionalFieldNames(TableSchema schema, String headerLine) {

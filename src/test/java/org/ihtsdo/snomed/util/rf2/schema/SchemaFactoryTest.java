@@ -61,9 +61,9 @@ public class SchemaFactoryTest {
 
 	@Test
 	public void testCreateSchemaBeanForOWLExpressionRefsetWithAdditionalName() throws Exception {
-		String filename = "rel2_sRefset_MedDRAOWLExpressionDelta_INT_20180731.txt";
+		String filename1 = "rel2_sRefset_MedDRAOWLExpressionDelta_INT_20180731.txt";
 		String headerLine = "id\teffectiveTime\tactive\tmoduleId\trefsetId\treferencedComponentId\towlExpression";
-		TableSchema schemaBean = schemaFactory.createSchemaBean(filename);
+		TableSchema schemaBean = schemaFactory.createSchemaBean(filename1);
 		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
 
 		assertEquals(ComponentType.REFSET, schemaBean.getComponentType());
@@ -71,6 +71,11 @@ public class SchemaFactoryTest {
 		List<Field> fields = schemaBean.getFields();
 		assertEquals(7, fields.size());
 		assertRelOwlRefsetFields(fields);
+
+		String filename2 = "rel2_sRefset_OWLExpressionSpanishExtensionDelta_INT_20180731.txt";
+		schemaBean = schemaFactory.createSchemaBean(filename2);
+		schemaFactory.populateExtendedRefsetAdditionalFieldNames(schemaBean, headerLine);
+		assertEquals("sct2_sRefset_OWLExpressionSpanishExtensionDelta_INT_20180731", schemaBean.getTableName());
 	}
 
 	@Test
