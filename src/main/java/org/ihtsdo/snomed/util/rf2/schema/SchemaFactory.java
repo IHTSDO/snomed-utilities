@@ -141,11 +141,11 @@ public class SchemaFactory {
 
 					} else if (componentType == ComponentType.IDENTIFIER) {
 						schema = new TableSchema(componentType, filenameNoExtension)
-								.field("identifierSchemeId", sctidType)
 								.field("alternateIdentifier", DataType.STRING)
 								.field("effectiveTime", DataType.TIME, effectiveTimeMandatory)
 								.field("active", DataType.BOOLEAN)
 								.field("moduleId", sctidType)
+								.field("identifierSchemeId", sctidType)
 								.field("referencedComponentId", sctidType);
 
 					} else {
