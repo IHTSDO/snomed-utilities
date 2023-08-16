@@ -38,14 +38,14 @@ public class Rf2ArchiveBuilder implements RF2SchemaConstants {
 	}
 	
 	public String getFilename(RF2_FILE rf2File) throws SnomedUtilException {
-		switch (rf2File) {
-			case CONCEPT: return conDeltaFilename;
-			case STATED : return sRelDeltaFilename;
-			case INFERRED : return relDeltaFilename;
-			case LANGUAGE : return langDeltaFilename;
-			case DESCRIPTION : return descDeltaFilename;
-			default: throw new SnomedUtilException("Unknown RF2 File: " + rf2File);
-		}
+        return switch (rf2File) {
+            case CONCEPT -> conDeltaFilename;
+            case STATED -> sRelDeltaFilename;
+            case INFERRED -> relDeltaFilename;
+            case LANGUAGE -> langDeltaFilename;
+            case DESCRIPTION -> descDeltaFilename;
+            default -> throw new SnomedUtilException("Unknown RF2 File: " + rf2File);
+        };
 	}
 	
 	public void init() throws IOException, SnomedUtilException {
@@ -88,14 +88,14 @@ public class Rf2ArchiveBuilder implements RF2SchemaConstants {
 				BufferedWriter bw = new BufferedWriter(osw);
 				PrintWriter out = new PrintWriter(bw))
 		{
-			StringBuffer line = new StringBuffer();
+			StringBuilder line = new StringBuilder();
 			for (int x=0; x<columns.length; x++) {
 				if (x > 0) {
 					line.append(TSV_FIELD_DELIMITER);
 				}
 				line.append(columns[x]==null?"":columns[x]);
 			}
-			out.print(line.toString() + LINE_DELIMITER);
+			out.print(line + LINE_DELIMITER);
 		} catch (Exception e) {
 			GlobalUtils.print("Unable to output report rf2 line due to " + e.getMessage());
 		}
@@ -140,21 +140,21 @@ public class Rf2ArchiveBuilder implements RF2SchemaConstants {
 		File[] files = dirObj.listFiles();
 		byte[] tmpBuf = new byte[1024];
 
-		for (int i = 0; i < files.length; i++) {
-			if (files[i].isDirectory()) {
-				addDir(rootLocation, files[i], out);
-				continue;
-			}
-			FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
-			String relativePath = files[i].getAbsolutePath().substring(rootLocation.length());
-			GlobalUtils.print(" Adding: " + relativePath);
-			out.putNextEntry(new ZipEntry(relativePath));
-			int len;
-			while ((len = in.read(tmpBuf)) > 0) {
-				out.write(tmpBuf, 0, len);
-			}
-			out.closeEntry();
-			in.close();
-		}
+        for (File file : files) {
+            if (file.isDirectory()) {
+                addDir(rootLocation, file, out);
+                continue;
+            }
+            FileInputStream in = new FileInputStream(file.getAbsolutePath());
+            String relativePath = file.getAbsolutePath().substring(rootLocation.length());
+            GlobalUtils.print(" Adding: " + relativePath);
+            out.putNextEntry(new ZipEntry(relativePath));
+            int len;
+            while ((len = in.read(tmpBuf)) > 0) {
+                out.write(tmpBuf, 0, len);
+            }
+            out.closeEntry();
+            in.close();
+        }
 	}
 }

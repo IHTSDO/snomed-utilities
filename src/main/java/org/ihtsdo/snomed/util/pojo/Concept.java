@@ -15,15 +15,15 @@ import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
 
 public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 
-	private static Map<Long, Concept> allStatedConcepts = new HashMap<Long, Concept>();
-	private static Map<Long, Concept> allInferredConcepts = new HashMap<Long, Concept>();
-	private static Map<Long, Boolean> fullyDefinedMap = new HashMap<Long, Boolean>();
+	private static final Map<Long, Concept> allStatedConcepts = new HashMap<>();
+	private static final Map<Long, Concept> allInferredConcepts = new HashMap<>();
+	private static final Map<Long, Boolean> fullyDefinedMap = new HashMap<>();
 
-	private Long sctId;
+	private final Long sctId;
 	private boolean isFullyDefined = false;
-	Set<Concept> parents = new TreeSet<Concept>();
-	Set<Concept> children = new TreeSet<Concept>();
-	List<RelationshipGroup> groups = new ArrayList<RelationshipGroup>();
+	Set<Concept> parents = new TreeSet<>();
+	Set<Concept> children = new TreeSet<>();
+	List<RelationshipGroup> groups = new ArrayList<>();
 	private GroupsHash groupsHash = null;
 	public static final int DEPTH_NOT_SET = -1;
 	public static final int IMMEDIATE_CHILDREN_ONLY = 1;
@@ -42,7 +42,7 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	public static Concept registerConcept(String sctIdStr, CHARACTERISTIC characteristic) {
 		Map<Long, Concept> allConcepts = characteristic.equals(Relationship.CHARACTERISTIC.STATED) ? allStatedConcepts
 				: allInferredConcepts;
-		Long sctId = new Long(sctIdStr);
+		Long sctId = Long.valueOf(sctIdStr);
 		// Do we know about this concept?
 		Concept concept;
 		if (!allConcepts.containsKey(sctId)) {
@@ -99,8 +99,7 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof Concept) {
-			Concept otherConcept = (Concept) other;
+		if (other instanceof Concept otherConcept) {
 			return this.sctId.equals(otherConcept.sctId);
 		}
 		return false;
@@ -111,11 +110,11 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	}
 
 	public Set<Concept> getDescendents(int depth, boolean fullyDefinedOnly) {
-		return populateDescendents(new HashSet<Concept>(), fullyDefinedOnly?DefinitionStatus.FULLY_DEFINED:DefinitionStatus.ALL, depth);
+		return populateDescendents(new HashSet<>(), fullyDefinedOnly?DefinitionStatus.FULLY_DEFINED:DefinitionStatus.ALL, depth);
 	}
 	
 	public Set<Concept> getDescendents(int depth, DefinitionStatus defStatus) {
-		return populateDescendents(new HashSet<Concept>(), defStatus, depth);
+		return populateDescendents(new HashSet<>(), defStatus, depth);
 	}
 
 	private Set<Concept> populateDescendents(Set<Concept> allDescendents,DefinitionStatus defStatus, int depth) {
@@ -148,7 +147,7 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	public GroupsHash getGroupsShapeHash() throws UnsupportedEncodingException {
 		if (groupsHash == null) {
 			long groupsHashLong = 0L;
-			Set<GroupShape> contributingGroups = new HashSet<GroupShape>();
+			Set<GroupShape> contributingGroups = new HashSet<>();
 			for (RelationshipGroup g : groups) {
 				groupsHashLong += g.getGroupBasicShape().hashCode();
 				contributingGroups.add(g.getGroupBasicShape());
@@ -176,7 +175,7 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	}
 
 	public Collection<Relationship> getAllAttributes() {
-		Set<Relationship> allAttributes = new HashSet<Relationship>();
+		Set<Relationship> allAttributes = new HashSet<>();
 		for (RelationshipGroup thisGroup : groups) {
 			allAttributes.addAll(thisGroup.getAttributes());
 		}
@@ -206,7 +205,7 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	}
 
 	public Set<Concept> getAncestors(int depth) {
-		Set<Concept> allAncestorsAndSelf = new HashSet<Concept>();
+		Set<Concept> allAncestorsAndSelf = new HashSet<>();
 		this.populateAllAncestors(allAncestorsAndSelf, depth);
 		return allAncestorsAndSelf;
 	}
@@ -218,7 +217,7 @@ public class Concept implements Comparable<Concept>, RF2SchemaConstants {
 	}
 
 	public Set<Relationship> getGroup(int i) {
-		return groups.size() > i ? groups.get(i).getAttributes() : new HashSet<Relationship>();
+		return groups.size() > i ? groups.get(i).getAttributes() : new HashSet<>();
 	}
 
 }

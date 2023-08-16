@@ -3,7 +3,6 @@ package org.ihtsdo.snomed.util.rf2.srsi;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -21,10 +20,11 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.output.NullOutputStream;
 import org.ihtsdo.snomed.util.rf2.srsi.Relationship.CHARACTERISTIC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
 
 /**
  * Usage java -classpath /Users/Peter/code/snomed-utilities/target/snomed-utilities-1.0.10-SNAPSHOT.jar
@@ -39,12 +39,12 @@ public class RelationshipProcessor {
 
 	private final String statedFile;
 	private final String inferredFile;
-	private String outputFile;
+	private final String outputFile;
 	// The additional file contains relationships we want to just pass straight through to the stated output
-	private String additionalFile;
+	private final String additionalFile;
 
-	private static boolean LEAVE_SCTID_AS_IS = false;
-	private static boolean SET_SCTID_TO_NULL = true;
+	private static final boolean LEAVE_SCTID_AS_IS = false;
+	private static final boolean SET_SCTID_TO_NULL = true;
 
 	private Map<String, Relationship> statedRelationships;
 	private Map<String, Relationship> inferredRelationships;
@@ -101,7 +101,7 @@ public class RelationshipProcessor {
 			return;
 		}
 		LOGGER.info(conceptInferred + " - Inferred IS A Hierarchy: ");
-		Iterable<Concept> parents = conceptInferred.listParents(new LinkedHashSet<Concept>());
+		Iterable<Concept> parents = conceptInferred.listParents(new LinkedHashSet<>());
 		for (Concept thisParent : parents) {
 			LOGGER.info(thisParent.toString());
 		}
@@ -126,7 +126,7 @@ public class RelationshipProcessor {
 		}
 
 		TreeSet<Relationship> inferredRels = conceptInferred.getAttributes();
-		LOGGER.info(conceptSCTID.toString() + " - attributes inferred view: ");
+		LOGGER.info(conceptSCTID + " - attributes inferred view: ");
 		for (Relationship thisRelationship : inferredRels) {
 			addStar = thisRelationship.isReplacement();
 			LOGGER.info(thisRelationship.toString(addStar));
@@ -279,7 +279,7 @@ public class RelationshipProcessor {
 		// We need to filter 'Is A' relationships out, because they don't take part in groups
 		boolean filterIsAs = true;
 		List<Relationship> siblingRels = sRelationship.getSourceConcept().findMatchingRelationships(sRelationship.getGroup(), filterIsAs);
-		List<Long> groupTypes = new ArrayList<Long>();
+		List<Long> groupTypes = new ArrayList<>();
 		for (Relationship thisSibling : siblingRels) {
 			groupTypes.add(thisSibling.getTypeId());
 		}
@@ -288,7 +288,7 @@ public class RelationshipProcessor {
 		List<Relationship> potentialGroups = sourceConceptInf.findMatchingRelationships(groupTypes);
 		
 		//Then this stated relationship must be present in that group as itself or a more proximate destination
-		List<Relationship> replacements = new ArrayList<Relationship>();
+		List<Relationship> replacements = new ArrayList<>();
 		
 		//So for all relationships in potentially compatible groups, see if we can match on type and destination
 		//First because the destination is the same...
@@ -425,7 +425,7 @@ public class RelationshipProcessor {
 			throws Exception {
 		// Does this file exist and not as a directory?
 		File file = new File(filePath);
-		Map<String, Relationship> loadedRelationships = new HashMap<String, Relationship>();
+		Map<String, Relationship> loadedRelationships = new HashMap<>();
 
 		if (!file.exists() || file.isDirectory()) {
 			if (optional) {
@@ -450,20 +450,19 @@ public class RelationshipProcessor {
 					}
 				} else {
 					isFirstLine = false;
-					continue;
-				}
+                }
 
 			}
 		}
 		return loadedRelationships;
 	}
 
-	private void outputFile(boolean dryRun) throws FileNotFoundException, IOException {
+	private void outputFile(boolean dryRun) throws IOException {
 
 		LOGGER.info("Writing file to {} with effective time {}", (dryRun? "Dry Run Only" : outputFile), outputEffectiveTime);
 
 		try (Writer writer = new BufferedWriter(
-				new OutputStreamWriter(dryRun ? new NullOutputStream() : new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
+				new OutputStreamWriter(dryRun ? NULL_OUTPUT_STREAM: new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
 			// Loop through all stated relationships and disable the replaced ones
 			// and output the replacements all with effective time which matches the output file
 
@@ -528,14 +527,14 @@ public class RelationshipProcessor {
 
 	}
 
-	private void goInteractive() throws NumberFormatException, Exception {
+	private void goInteractive() throws Exception {
 		String sctid = "";
 		try (Scanner in = new Scanner(System.in)) {
 			while (!sctid.equals("quit")) {
 				System.out.println("Enter source concept sctid: ");
 				sctid = in.nextLine().trim();
 				if (!sctid.equals("quit")) {
-					outputConcept(new Long(sctid));
+					outputConcept(Long.valueOf(sctid));
 				}
 			}
 		}

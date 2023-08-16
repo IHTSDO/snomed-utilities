@@ -44,7 +44,7 @@ public class Type5UuidFactory {
 		sha1digest[6] &= 0x0f; /* clear version */
 		sha1digest[6] |= 0x50; /* set to version 5 */
 		sha1digest[8] &= 0x3f; /* clear variant */
-		sha1digest[8] |= 0x80; /* set to IETF variant */
+		sha1digest[8] |= (byte) 0x80; /* set to IETF variant */
 
 		long msb = 0;
 		long lsb = 0;
@@ -78,16 +78,14 @@ public class Type5UuidFactory {
 
 		for (int i = 0, j = 0; i < 36; ++j) {
 			// Need to bypass hyphens:
-			switch (i) {
-				case 8:
-				case 13:
-				case 18:
-				case 23:
-					if (id.charAt(i) != '-') {
-						throw new NumberFormatException("UUID has to be represented by the standard 36-char representation");
-					}
-					++i;
-			}
+            switch (i) {
+                case 8, 13, 18, 23 -> {
+                    if (id.charAt(i) != '-') {
+                        throw new NumberFormatException("UUID has to be represented by the standard 36-char representation");
+                    }
+                    ++i;
+                }
+            }
 			char c = id.charAt(i);
 
 			if (c >= '0' && c <= '9') {

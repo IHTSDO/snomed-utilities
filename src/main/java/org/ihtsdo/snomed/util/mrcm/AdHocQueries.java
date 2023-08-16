@@ -125,9 +125,10 @@ public class AdHocQueries implements RF2SchemaConstants{
 		for (long thisRequiredAttribute : attributes) {
 			boolean attributeFound = false;
 			for (Relationship thisAttribute : concept.getAllAttributes()) {
-				if (thisAttribute.getTypeId().equals(thisRequiredAttribute)) {
-					attributeFound = true;
-				}
+                if (thisAttribute.getTypeId().equals(thisRequiredAttribute)) {
+                    attributeFound = true;
+                    break;
+                }
 			}
 			if (!attributeFound) {
 				hasAllAttributes = false;
@@ -153,7 +154,7 @@ public class AdHocQueries implements RF2SchemaConstants{
 		println ("Examining " + ontology.size() + " concepts");
 		for (Concept c : ontology) {
 			for (Relationship r : c.getGroup(0)) {
-				if (r.getTypeId().longValue() == partOfAttributeSCTID && r.isActive()) {
+				if (r.getTypeId() == partOfAttributeSCTID && r.isActive()) {
 					//Any concept that has "Structure" in the FSN (other than in the semantic tag)
 					//gets filtered out
 					String fsn = Description.getDescription(r.getSourceConcept());

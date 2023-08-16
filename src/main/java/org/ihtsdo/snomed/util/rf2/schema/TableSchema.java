@@ -5,9 +5,9 @@ import java.util.List;
 
 public class TableSchema {
 
-	private String filenameNoExtension;
-	private ComponentType componentType;
-	private List<Field> fields;
+	private final String filenameNoExtension;
+	private final ComponentType componentType;
+	private final List<Field> fields;
 
 	private static final String TXT_FILE_EXTENSION = ".txt";
 

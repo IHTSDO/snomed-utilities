@@ -3,7 +3,6 @@ package org.ihtsdo.snomed.util.rf2.srsi;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -45,7 +44,7 @@ public class ConceptFilter {
 
 	}
 
-	private static void filterFile(File fileToFilter, int filterColumn, Set conceptSCTIDs, File outputFile) throws FileNotFoundException,
+	private static void filterFile(File fileToFilter, int filterColumn, Set<String> conceptSCTIDs, File outputFile) throws
 			IOException {
 		FileOutputStream fos = new FileOutputStream(outputFile);
 
@@ -67,7 +66,7 @@ public class ConceptFilter {
 	}
 
 	private static Set<String> loadComponents(File conceptFile) throws IOException {
-		Set<String> loadedComponents = new TreeSet<String>();
+		Set<String> loadedComponents = new TreeSet<>();
 
 		try (BufferedReader br = new BufferedReader(new FileReader(conceptFile))) {
 			String line;

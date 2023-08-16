@@ -3,7 +3,6 @@ package org.ihtsdo.snomed.util.rf2.srsi;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -11,18 +10,17 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.ihtsdo.snomed.util.Type5UuidFactory;
-import org.ihtsdo.snomed.util.rf2.schema.SchemaFactory;
 import org.ihtsdo.snomed.util.rf2.srsi.Relationship.CHARACTERISTIC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Concept implements Comparable<Concept> {
 
-	private Long sctId;
+	private final Long sctId;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Concept.class);
 
-	private static Type5UuidFactory type5UuidFactory;
+	private static final Type5UuidFactory type5UuidFactory;
 
 	private int maxGroupId = 0; // How many groups are defined for this source concept?
 	private int replacmentNumber = 0; // counter to track/match stated relationships with their replacements
@@ -37,15 +35,15 @@ public class Concept implements Comparable<Concept> {
 		}
 	}
 
-	Set<Concept> parents = new TreeSet<Concept>();
-	TreeSet<Relationship> attributes = new TreeSet<Relationship>();
+	Set<Concept> parents = new TreeSet<>();
+	TreeSet<Relationship> attributes = new TreeSet<>();
 
 	public Concept(Long id) {
 		this.sctId = id;
 	}
 
-	private static Map<Long, Concept> allStatedConcepts = new HashMap<Long, Concept>();
-	private static Map<Long, Concept> allInferredConcepts = new HashMap<Long, Concept>();
+	private static final Map<Long, Concept> allStatedConcepts = new HashMap<>();
+	private static final Map<Long, Concept> allInferredConcepts = new HashMap<>();
 
 	public static void addRelationship(Relationship relationship, Relationship.CHARACTERISTIC characteristic) throws Exception {
 
@@ -92,20 +90,20 @@ public class Concept implements Comparable<Concept> {
 	/**
 	 * Loop through all concepts known in that graph and ensure only 1 (hopefully the root) has no parents.
 	 * 
-	 * @param stated
+	 * @param characteristic	which graph to check
 	 */
 	public static void ensureParents(CHARACTERISTIC characteristic) {
 		Map<Long, Concept> allConcepts = characteristic.equals(Relationship.CHARACTERISTIC.STATED) ? allStatedConcepts
 				: allInferredConcepts;
 
-		List<Concept> noParents = new ArrayList<Concept>();
+		List<Concept> noParents = new ArrayList<>();
 		for (Concept thisConcept : allConcepts.values()) {
-			if (thisConcept.parents.size() == 0) {
+			if (thisConcept.parents.isEmpty()) {
 				noParents.add(thisConcept);
 			}
 		}
 
-		LOGGER.debug("The following concepts have no parent in graph {}: ", characteristic.toString());
+		LOGGER.debug("The following concepts have no parent in graph {}: ", characteristic);
 		for (Concept thisConcept : noParents) {
 			LOGGER.debug(thisConcept.toString());
 		}
@@ -119,8 +117,7 @@ public class Concept implements Comparable<Concept> {
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof Concept) {
-			Concept otherConcept = (Concept) other;
+		if (other instanceof Concept otherConcept) {
 			return this.sctId.equals(otherConcept.sctId);
 		}
 		return false;
@@ -142,7 +139,7 @@ public class Concept implements Comparable<Concept> {
 
 		// Now we'll try for an exact match with the destination concept, and if not found,
 		// run again looking for more proximate children
-		List<Relationship> secondPassMatches = new ArrayList<Relationship>();
+		List<Relationship> secondPassMatches = new ArrayList<>();
 		for (Relationship thisRelationship : firstPassMatches) {
 			if (thisRelationship.getDestinationConcept().equals(statedDestinationConcept)) {
 				secondPassMatches.add(thisRelationship);
@@ -162,7 +159,7 @@ public class Concept implements Comparable<Concept> {
 
 	private List<Relationship> findMatchingRelationships(Long typeId) {
 		// find relationships of this concept with the same type
-		List<Relationship> matches = new ArrayList<Relationship>();
+		List<Relationship> matches = new ArrayList<>();
 		for (Relationship thisRelationship : attributes) {
 			if (thisRelationship.isType(typeId)) {
 				matches.add(thisRelationship);
@@ -185,9 +182,9 @@ public class Concept implements Comparable<Concept> {
 	/**
 	 * Recursively work through all parents and add them to the list
 	 * 
-	 * @param parents
-	 * @return
-	 * @throws Exception
+	 * @param hierarchyList - the list to add parents to
+	 * @return the list of parents
+	 * @throws Exception if the number of parents exceeds the configured maximum
 	 */
 	public Iterable<Concept> listParents(LinkedHashSet<Concept> hierarchyList) throws Exception {
 		boolean firstSeen;
@@ -207,7 +204,7 @@ public class Concept implements Comparable<Concept> {
 
 	public List<Relationship> findMatchingRelationships(Long typeId, int group) {
 		//find relationships of this concept with the same type and group
-		List<Relationship> matches = new ArrayList<Relationship>();
+		List<Relationship> matches = new ArrayList<>();
 		for (Relationship thisRelationship : attributes) {
 			if (thisRelationship.isType(typeId) && thisRelationship.isGroup(group)) {
 				matches.add(thisRelationship);
@@ -217,15 +214,17 @@ public class Concept implements Comparable<Concept> {
 	}
 
 	/**
-	 * @param allowChildren
-	 *            if allowing children then allow more proximate destination and/or more proximate type
+	 * @param allowChildOfDestination
+	 *            if allowing children then allow more proximate destination
+	 * @param allowChildOfType
+	 *            if allowing children then allow more proximate type
 	 * @return
 	 */
 	public List<Relationship> findMatchingRelationships(Long typeId, Long destinationId, int group, boolean allowChildOfDestination,
 			boolean allowChildOfType) {
 		// find relationships of this concept with the same type and group
 		Concept inferredDestination = Concept.getConcept(destinationId, CHARACTERISTIC.INFERRED);
-		List<Relationship> matches = new ArrayList<Relationship>();
+		List<Relationship> matches = new ArrayList<>();
 		for (Relationship thisRelationship : attributes) {
 			if (thisRelationship.isGroup(group) && thisRelationship.isType(typeId)
 					&& thisRelationship.getDestinationId().equals(destinationId)) {
@@ -259,15 +258,11 @@ public class Concept implements Comparable<Concept> {
 		return matches;
 	}
 
-	/**
-	 * @param allowChildren
-	 *            if allowing children then allow more proximate destination and/or more proximate type
-	 * @return
-	 */
+
 	public List<Relationship> findMatchingRelationships(Long typeId, Long destinationId, boolean allowChildOfDestination,
 			boolean allowChildOfType) {
 		// find relationships of this concept with the same type and destination
-		List<Relationship> matches = new ArrayList<Relationship>();
+		List<Relationship> matches = new ArrayList<>();
 		for (Relationship thisRelationship : attributes) {
 			if (thisRelationship.isType(typeId) && thisRelationship.getDestinationId().equals(destinationId)) {
 				matches.add(thisRelationship);
@@ -310,7 +305,7 @@ public class Concept implements Comparable<Concept> {
 
 	public List<Relationship> findMatchingRelationships(int group, boolean filterIsAs) {
 		// find relationships of this concept with the group
-		List<Relationship> matches = new ArrayList<Relationship>();
+		List<Relationship> matches = new ArrayList<>();
 		for (Relationship thisRelationship : attributes) {
 			if (thisRelationship.isGroup(group)) {
 				// Are we filtering out Is A relationships?
@@ -356,7 +351,7 @@ public class Concept implements Comparable<Concept> {
 	 * @return a list of relationships in groups where the group contains at least ALL the given relationship types
 	 */
 	public List<Relationship> findMatchingRelationships(List<Long> groupTypes) {
-		List<Relationship> allGroupRelationships = new ArrayList<Relationship>();
+		List<Relationship> allGroupRelationships = new ArrayList<>();
 		// Work through all the groups
 		for (int groupId = 1; groupId <= this.maxGroupId; groupId++) {
 			boolean allMatch = true;
@@ -391,7 +386,7 @@ public class Concept implements Comparable<Concept> {
 	 * @return a list of relationships for this concept where the type is the same or a child of the target relationship type
 	 */
 	public List<Relationship> findMatchingRelationships(Concept relType) {
-		List<Relationship> matches = new ArrayList<Relationship>();
+		List<Relationship> matches = new ArrayList<>();
 		for (Relationship thisRel : this.attributes) {
 			if (thisRel.isType(relType.getSctId())) {
 				matches.add(thisRel);
@@ -436,9 +431,7 @@ public class Concept implements Comparable<Concept> {
 
 	/**
 	 * Matches on type, destination and group exactly
-	 * 
-	 * @param potentialReplacement
-	 * @return
+	 *
 	 */
 	public List<Relationship> findMatchingRelationships(Relationship r) {
 		return findMatchingRelationships(r.getTypeId(), r.getDestinationId(), r.getGroup(), false, false);

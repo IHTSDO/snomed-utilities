@@ -30,7 +30,7 @@ public class GlobalUtils {
 				BufferedWriter bw = new BufferedWriter(osw);
 				PrintWriter out = new PrintWriter(bw))
 		{
-			StringBuffer line = new StringBuffer();
+			StringBuilder line = new StringBuilder();
 			for (int x=0; x<columns.length; x++) {
 				if (x > 0) {
 					line.append(delimiter);
@@ -39,7 +39,7 @@ public class GlobalUtils {
 				line.append(columns[x]==null?"":columns[x]);
 				line.append(quoteFields?QUOTE:"");
 			}
-			out.print(line.toString() + LINE_DELIMITER);
+			out.print(line + LINE_DELIMITER);
 		} catch (Exception e) {
 			print ("Unable to output to " + file.getAbsolutePath() + " due to " + e.getMessage());
 		}
@@ -51,7 +51,7 @@ public class GlobalUtils {
 				BufferedWriter bw = new BufferedWriter(osw);
 				PrintWriter out = new PrintWriter(bw))
 		{
-			out.print(line.toString() + LINE_DELIMITER);
+			out.print(line + LINE_DELIMITER);
 		} catch (Exception e) {
 			print ("Unable to output to " + file.getAbsolutePath() + " due to " + e.getMessage());
 		}
@@ -64,7 +64,7 @@ public class GlobalUtils {
 				PrintWriter out = new PrintWriter(bw))
 		{
 			for (String line : lines) {
-				out.print(line.toString() + LINE_DELIMITER);
+				out.print(line + LINE_DELIMITER);
 			}
 		} catch (Exception e) {
 			print ("Unable to output to " + file.getAbsolutePath() + " due to " + e.getMessage());
@@ -123,7 +123,7 @@ public class GlobalUtils {
 	}
 	
 	private static String getZipFilename(File dirToZip, String zipFileOrigName) {
-		String zipFileName = null;
+		String zipFileName;
 		if (zipFileOrigName == null || zipFileOrigName.isEmpty()) {
 			zipFileOrigName = dirToZip.listFiles()[0].getName();
 		}
@@ -139,21 +139,21 @@ public class GlobalUtils {
 		File[] files = dirObj.listFiles();
 		byte[] tmpBuf = new byte[1024];
 
-		for (int i = 0; i < files.length; i++) {
-			if (files[i].isDirectory()) {
-				addDir(rootLocation, files[i], out);
-				continue;
-			}
-			FileInputStream in = new FileInputStream(files[i].getAbsolutePath());
-			String relativePath = files[i].getAbsolutePath().substring(rootLocation.length());
-			print(" Adding: " + relativePath);
-			out.putNextEntry(new ZipEntry(relativePath));
-			int len;
-			while ((len = in.read(tmpBuf)) > 0) {
-				out.write(tmpBuf, 0, len);
-			}
-			out.closeEntry();
-			in.close();
-		}
+        for (File file : files) {
+            if (file.isDirectory()) {
+                addDir(rootLocation, file, out);
+                continue;
+            }
+            FileInputStream in = new FileInputStream(file.getAbsolutePath());
+            String relativePath = file.getAbsolutePath().substring(rootLocation.length());
+            print(" Adding: " + relativePath);
+            out.putNextEntry(new ZipEntry(relativePath));
+            int len;
+            while ((len = in.read(tmpBuf)) > 0) {
+                out.write(tmpBuf, 0, len);
+            }
+            out.closeEntry();
+            in.close();
+        }
 	}
 }

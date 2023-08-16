@@ -10,7 +10,7 @@ public class Description implements RF2SchemaConstants {
 	private final Long conceptId;
 	private final String term;
 
-	private static Map<Long, Description> allFSNs = new HashMap<Long, Description>();
+	private static final Map<Long, Description> allFSNs = new HashMap<>();
 
 	public Description(String[] lineItems) {
 		conceptId = Long.valueOf(lineItems[DES_IDX_CONCEPTID]);

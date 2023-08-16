@@ -3,7 +3,6 @@ package org.ihtsdo.snomed.util.rf2.refset;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -33,13 +32,13 @@ public class TextToSimpleRefset implements RF2SchemaConstants{
 	String moduleId = "900000000000207008";  //Default to International Edition
 	String[] simpleRefsetHeader = new String[] { "id","effectiveTime","active","moduleId","refsetId","referencedComponentId"};
 	
-	public static void main (String[] args) throws SnomedUtilException, FileNotFoundException, IOException{
+	public static void main (String[] args) throws SnomedUtilException, IOException{
 		TextToSimpleRefset app = new TextToSimpleRefset();
 		app.init(args);
 		app.processFile();
 	}
 	
-	private void processFile() throws FileNotFoundException, IOException, SnomedUtilException {
+	private void processFile() throws IOException, SnomedUtilException {
 		writeToRF2File(outputFile, simpleRefsetHeader);
 		try (BufferedReader br = new BufferedReader(new FileReader(inputFile))) {
 			String sctidStr;
@@ -70,26 +69,31 @@ public class TextToSimpleRefset implements RF2SchemaConstants{
 		}
 	
 		for (int x=0; x < args.length; x++) {
-			if (args[x].equals("-r")) {
-				x++;
-				refsetId = args[x];
-			} else if (args[x].equals("-e")) {
-				x++;
-				effectiveDate = args[x];
-				outputFile = new File (outputFilenameRoot + effectiveDate + ".txt");
-				int fileNameModifier = 0;
-				while (outputFile.exists()) {
-					outputFile = new File (outputFilenameRoot + effectiveDate + "_" + (++fileNameModifier) + ".txt");
-				}
-			} else if (args[x].equals("-m")) {
-				x++;
-				moduleId = args[x];
-			} else{
-				File possibleFile = new File(args[x]);
-				if (possibleFile.exists() && !possibleFile.isDirectory() && possibleFile.canRead()) {
-					inputFile = possibleFile;
-				}
-			}
+            switch (args[x]) {
+                case "-r" -> {
+                    x++;
+                    refsetId = args[x];
+                }
+                case "-e" -> {
+                    x++;
+                    effectiveDate = args[x];
+                    outputFile = new File(outputFilenameRoot + effectiveDate + ".txt");
+                    int fileNameModifier = 0;
+                    while (outputFile.exists()) {
+                        outputFile = new File(outputFilenameRoot + effectiveDate + "_" + (++fileNameModifier) + ".txt");
+                    }
+                }
+                case "-m" -> {
+                    x++;
+                    moduleId = args[x];
+                }
+                default -> {
+                    File possibleFile = new File(args[x]);
+                    if (possibleFile.exists() && !possibleFile.isDirectory() && possibleFile.canRead()) {
+                        inputFile = possibleFile;
+                    }
+                }
+            }
 		}
 		
 		if (inputFile == null) {
@@ -106,14 +110,14 @@ public class TextToSimpleRefset implements RF2SchemaConstants{
 				BufferedWriter bw = new BufferedWriter(osw);
 				PrintWriter out = new PrintWriter(bw))
 		{
-			StringBuffer line = new StringBuffer();
+			StringBuilder line = new StringBuilder();
 			for (int x=0; x<columns.length; x++) {
 				if (x > 0) {
 					line.append(FIELD_DELIMITER);
 				}
 				line.append(columns[x]);
 			}
-			out.print(line.toString() + LINE_DELIMITER);
+			out.print(line + LINE_DELIMITER);
 		} catch (Exception e) {
 			print ("Unable to output report rf2 line due to " + e.getMessage());
 		}

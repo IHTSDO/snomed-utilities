@@ -1,6 +1,7 @@
 package org.ihtsdo.snomed.util.mrcm;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.ihtsdo.snomed.util.pojo.Concept;
@@ -39,7 +40,7 @@ public class EquivalencyChecker {
 		if (child.getParents().size() == 1) {
 			// Now the child needs to have more, or more specific attributes than the parent
 			// work out what attributes it doesn't have in common, but removing all those that are
-			Set<Relationship> unmatchedAttributes = new HashSet<Relationship>(child.getAllAttributes());
+			Set<Relationship> unmatchedAttributes = new HashSet<>(child.getAllAttributes());
 			for (Relationship thisParentAttribute : parent.getAllAttributes()) {
 				Relationship matchedAttribute = findMatchingTypeDestination(thisParentAttribute, unmatchedAttributes);
 				if (matchedAttribute != null) {
@@ -47,7 +48,7 @@ public class EquivalencyChecker {
 				}
 			}
 			// Now if we have no unmatched attributes remaining, then there's a potential equivalency
-			if (unmatchedAttributes.size() == 0) {
+			if (unmatchedAttributes.isEmpty()) {
 				LOGGER.warn("Possible equivalency of child {} to parent {}", child, parent);
 			}
 		}
@@ -56,7 +57,7 @@ public class EquivalencyChecker {
 
 	private static Relationship findMatchingTypeDestination(Relationship matchMe, Set<Relationship> searchMe) {
 		for (Relationship thisAttribute : searchMe) {
-			if (thisAttribute.getTypeId() == matchMe.getTypeId() && thisAttribute.getDestinationId() == matchMe.getDestinationId()) {
+			if (Objects.equals(thisAttribute.getTypeId(), matchMe.getTypeId()) && Objects.equals(thisAttribute.getDestinationId(), matchMe.getDestinationId())) {
 				return thisAttribute;
 			}
 		}

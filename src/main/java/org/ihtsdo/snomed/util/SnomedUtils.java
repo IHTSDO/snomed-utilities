@@ -10,13 +10,13 @@ import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
 
 public class SnomedUtils implements RF2SchemaConstants{
 	
-	private static VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
+	private static final VerhoeffCheckDigit verhoeffCheck = new VerhoeffCheckDigit();
 
 	public static String isValid(String sctId, PartionIdentifier partitionIdentifier) {
 		String errorMsg=null;
-		int partitionNumber = Integer.valueOf("" + sctId.charAt(sctId.length() -2));
+		int partitionNumber = Integer.parseInt("" + sctId.charAt(sctId.length() -2));
 		if ( partitionNumber != partitionIdentifier.ordinal()) {
-			errorMsg = sctId + " does not exist in partition " + partitionIdentifier.toString();
+			errorMsg = sctId + " does not exist in partition " + partitionIdentifier;
 		}
 		if (!verhoeffCheck.isValid(sctId)) {
 			errorMsg = sctId + " does not exhibit a valid check digit";
@@ -82,7 +82,7 @@ public class SnomedUtils implements RF2SchemaConstants{
 	}
 
 	public static List<String> removeBlankLines(List<String> lines) {
-		List<String> unixLines = new ArrayList<String>();
+		List<String> unixLines = new ArrayList<>();
 		for (String thisLine : lines) {
 			if (!thisLine.isEmpty()) {
 				unixLines.add(thisLine);

@@ -5,7 +5,7 @@ import org.ihtsdo.snomed.util.rf2.schema.RF2SchemaConstants;
 
 public class Relationship implements Comparable<Relationship>, RF2SchemaConstants {
 
-	private static Type5UuidFactory type5UuidFactory;
+	private static final Type5UuidFactory type5UuidFactory;
 	static {
 		try {
 			type5UuidFactory = new Type5UuidFactory();
@@ -17,16 +17,16 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 	private String[] lineItems;
 	private Concept sourceConcept;
 	private Concept destinationConcept;
-	private Long typeId;
-	private String uuid;
-	private int group;
+	private final Long typeId;
+	private final String uuid;
+	private final int group;
 	private boolean active;
 	boolean changedThisRelease = false;
 
 	// Was originally splitting the string in the constructor, but expensive to create object
 	// if active flag is zero, so check this before passing in
 	public Relationship(String[] lineValues, CHARACTERISTIC characteristic, boolean storeLineItems) throws Exception {
-		typeId = new Long(lineValues[REL_IDX_TYPEID]);
+		typeId = Long.valueOf(lineValues[REL_IDX_TYPEID]);
 		group = Integer.parseInt(lineValues[REL_IDX_RELATIONSHIPGROUP]);
 		uuid = type5UuidFactory.get(
 				lineValues[REL_IDX_SOURCEID] + lineValues[REL_IDX_DESTINATIONID] + lineValues[REL_IDX_TYPEID]
@@ -111,17 +111,16 @@ public class Relationship implements Comparable<Relationship>, RF2SchemaConstant
 	}
 
 	public String toString(boolean addStar) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("[S: ")
-.append(getSourceId())
-			.append(", D: ")
-.append(getDestinationId())
-			.append(", T: ")
-.append(getTypeId())
-			.append( ", G: ")
-.append(getGroup())
-			.append("] ");
-		return sb.toString();
+		String sb = "[S: " +
+				getSourceId() +
+				", D: " +
+				getDestinationId() +
+				", T: " +
+				getTypeId() +
+				", G: " +
+				getGroup() +
+				"] ";
+		return sb;
 	}
 
 	public boolean isGroup(int group) {

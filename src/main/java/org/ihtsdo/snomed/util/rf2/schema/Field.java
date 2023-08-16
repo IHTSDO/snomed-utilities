@@ -3,7 +3,7 @@ package org.ihtsdo.snomed.util.rf2.schema;
 public class Field {
 
 	private String name;
-	private DataType type;
+	private final DataType type;
 	private boolean mandatory;
 
 	Field(String name, DataType type) {

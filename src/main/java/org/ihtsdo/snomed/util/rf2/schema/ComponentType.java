@@ -11,7 +11,7 @@ public enum ComponentType {
 	IDENTIFIER("Identifier"),
 	REFSET("Refset");
 
-	private String name;
+	private final String name;
 
 	ComponentType(String name) {
 		this.name = name;

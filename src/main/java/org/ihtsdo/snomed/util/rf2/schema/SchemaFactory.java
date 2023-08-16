@@ -1,7 +1,6 @@
 package org.ihtsdo.snomed.util.rf2.schema;
 
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -80,22 +79,15 @@ public class SchemaFactory {
 						char[] additionalFieldTypes = contentTypeString.replace(ComponentType.REFSET.toString(), "").toCharArray();
 
 						for (char additionalFieldType : additionalFieldTypes) {
-							DataType type;
-							switch (additionalFieldType) {
-								case REFSET_FILENAME_CONCEPT_FIELD:
-									type = sctidType;
-									break;
-								case REFSET_FILENAME_INTEGER_FIELD:
-									type = DataType.INTEGER;
-									break;
-								case REFSET_FILENAME_STRING_FIELD:
-									type = DataType.STRING;
-									break;
-								default:
-									throw new FileRecognitionException("Unexpected character '" + additionalFieldType + "' within content " +
-											"type section of Refset filename.");
-							}
-							schema.field(null, type);
+							DataType type = switch (additionalFieldType) {
+                                case REFSET_FILENAME_CONCEPT_FIELD -> sctidType;
+                                case REFSET_FILENAME_INTEGER_FIELD -> DataType.INTEGER;
+                                case REFSET_FILENAME_STRING_FIELD -> DataType.STRING;
+                                default ->
+                                        throw new FileRecognitionException("Unexpected character '" + additionalFieldType + "' within content " +
+                                                "type section of Refset filename.");
+                            };
+                            schema.field(null, type);
 						}
 					} else {
 						LOGGER.info(NO_MATCH_PREFIX + "file type {} with Content type {} is not supported.", fileType, contentTypeString);

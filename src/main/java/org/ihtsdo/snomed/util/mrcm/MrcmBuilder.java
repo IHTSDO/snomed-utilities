@@ -32,15 +32,15 @@ import com.google.common.collect.Sets;
 
 public class MrcmBuilder implements SnomedConstants {
 
-	private static String INDENT_0 = "";
-	private static String INDENT_1 = "\t";
-	private static int MAX_MATCH_RELAXATION = 3;
+	private static final String INDENT_0 = "";
+	private static final String INDENT_1 = "\t";
+	private static final int MAX_MATCH_RELAXATION = 3;
 
-	private static enum CROSSOVER_STATUS {
+	private enum CROSSOVER_STATUS {
 		NOT_CROSSOVER, TYPE_CROSSOVER, DESTINATION_CROSSOVER
-	};
+	}
 
-	public static Long ROOT_SNOMED_CONCEPT_ID = 138875005L;
+    public static Long ROOT_SNOMED_CONCEPT_ID = 138875005L;
 
 	private final Logger logger = LoggerFactory.getLogger(GraphLoader.class);
 
@@ -187,9 +187,9 @@ public class MrcmBuilder implements SnomedConstants {
 
 	public void determineMRCM(String sctid, CHARACTERISTIC characteristicType, int depth, DefinitionStatus definitionStatus)
 			throws UnsupportedEncodingException {
-		Long conceptToExamine = null;
+		Long conceptToExamine;
 		try {
-			conceptToExamine = new Long(sctid);
+			conceptToExamine = Long.valueOf(sctid);
 		} catch (NumberFormatException e) {
 			print("Unable to parse SCTID  from '" + sctid + "' due to " + e.getMessage(), "");
 			return;
@@ -199,7 +199,7 @@ public class MrcmBuilder implements SnomedConstants {
 	}
 
 	public void displayShape(String sctid, CHARACTERISTIC hierarchyToExamine) {
-		Long conceptToExamine = new Long(sctid);
+		Long conceptToExamine = Long.valueOf(sctid);
 		Concept c = Concept.getConcept(conceptToExamine, hierarchyToExamine);
 		prettyPrint(c, INDENT_0);
 		for (Concept child : c.getDescendents(Concept.IMMEDIATE_CHILDREN_ONLY, true)) {
@@ -232,9 +232,9 @@ public class MrcmBuilder implements SnomedConstants {
 	}
 
 	public void determineValueRange(String attributeSCTID, String hierarchySCTID, CHARACTERISTIC hierarchyToExamine, boolean verbose) {
-		Set<Concept> allDestinations = new HashSet<Concept>();
-		Concept hierarchyStart = Concept.getConcept(new Long(hierarchySCTID), hierarchyToExamine);
-		Concept targetRelationshipType = Concept.getConcept(new Long(attributeSCTID), hierarchyToExamine);
+		Set<Concept> allDestinations = new HashSet<>();
+		Concept hierarchyStart = Concept.getConcept(Long.parseLong(hierarchySCTID), hierarchyToExamine);
+		Concept targetRelationshipType = Concept.getConcept(Long.parseLong(attributeSCTID), hierarchyToExamine);
 		populateAllDestinations(allDestinations, hierarchyStart, targetRelationshipType);
 		if (verbose) {
 			logger.info("Collected {} possible values for attribute {} in hierarchy {}", allDestinations.size(),
@@ -298,8 +298,8 @@ public class MrcmBuilder implements SnomedConstants {
 
 	public void determineAllLCAs(String hierarchySCTID, CHARACTERISTIC hierarchyToExamine) {
 		// Collect all relationship types for this concept down
-		Concept hierarchyStart = Concept.getConcept(new Long(hierarchySCTID), hierarchyToExamine);
-		Set<Concept> allAttributeTypes = new TreeSet<Concept>();
+		Concept hierarchyStart = Concept.getConcept(Long.parseLong(hierarchySCTID), hierarchyToExamine);
+		Set<Concept> allAttributeTypes = new TreeSet<>();
 		populateAllAttributeTypes(hierarchyStart, allAttributeTypes);
 
 		// Now work through these attributes and report just the LCA for the attribute range
@@ -419,13 +419,14 @@ public class MrcmBuilder implements SnomedConstants {
 	 * (fewer attributes in the parent), and it may also match more or less specific relationship types and destinations. Recurse call
 	 * getting more relaxed each time.
 	 * 
-	 * @param thisConcept
-	 * @param thisGroup
-	 * @return
+	 * @param childConcept	the concept whose group we're trying to match
+	 * @param childGroup	the group we're trying to match
+	 * @param relaxationLevel	how much to relax the matching
+	 * @return the parent and group number that best matches the child group
 	 */
 	private ParentGroup findBestFitOrigin(Concept childConcept, RelationshipGroup childGroup, int relaxationLevel) {
 		ParentGroup result = null;
-		Map<ParentGroup, Integer> matches = new HashMap<ParentGroup, Integer>();
+		Map<ParentGroup, Integer> matches = new HashMap<>();
 		// Work through all combinations of the child's group attributes
 		Set<Set<Relationship>> attributeCombinations = Sets.powerSet(childGroup.getAttributes());
 		// Work through all parents, and all groups of that parent
@@ -486,7 +487,7 @@ public class MrcmBuilder implements SnomedConstants {
 	 * @return a set containing both the self, parents and children of a concept to a depth given by the relaxationLevel
 	 */
 	private Set<Concept> widenNet(Concept concept, int netWidth) {
-		Set<Concept> net = new HashSet<Concept>();
+		Set<Concept> net = new HashSet<>();
 		net.add(concept);
 		net.addAll(concept.getAncestors(netWidth));
 		net.addAll(concept.getDescendents(netWidth, false));
@@ -585,7 +586,7 @@ public class MrcmBuilder implements SnomedConstants {
 	}
 
 	// Grouper class identifying both a parent and a group id
-	private class ParentGroup {
+	private static class ParentGroup {
 		Concept parent;
 		int groupId;
 
@@ -631,7 +632,7 @@ public class MrcmBuilder implements SnomedConstants {
 	}
 
 	private Set<Concept> filterOutDescriptions(Set<Concept> matches, String searchTerm, boolean mustBePresent) {
-		Set<Concept> filteredConcepts = new HashSet<Concept>();
+		Set<Concept> filteredConcepts = new HashSet<>();
 		for (Concept thisMatch : matches) {
 			String desc = Description.getDescription(thisMatch).toLowerCase();
 			if (desc.contains(searchTerm)) {
@@ -647,7 +648,7 @@ public class MrcmBuilder implements SnomedConstants {
 
 
 	private Set<Concept> filterOutAttributes(Set<Concept> matches, SearchParameters params) {
-		Set<Concept> filteredConcepts = new HashSet<Concept>();
+		Set<Concept> filteredConcepts = new HashSet<>();
 		for (Concept thisMatch : matches) {
 			if (conceptHasAttribute(thisMatch, params)) {
 				if (params.attributeSearchPresent) {
@@ -661,16 +662,12 @@ public class MrcmBuilder implements SnomedConstants {
 	}
 
 	private boolean conceptHasAttribute(Concept c, SearchParameters params) {
-		switch (params.attributeSearch) {
-			case AttributeType : 
-				return conceptHasAttributeType(c, params.attributeType);
-			case AttributeValue:
-				return conceptHasAttributeValue(c, params.attributeValue);
-			case AttributeValueString:
-				return conceptHasAttributeValueString(c, params.attributeValueString);
-			default :
-				throw new RuntimeException ("Unexpected attribute search criteria " + params.attributeSearch);
-		}
+        return switch (params.attributeSearch) {
+            case AttributeType -> conceptHasAttributeType(c, params.attributeType);
+            case AttributeValue -> conceptHasAttributeValue(c, params.attributeValue);
+            case AttributeValueString -> conceptHasAttributeValueString(c, params.attributeValueString);
+            default -> throw new RuntimeException("Unexpected attribute search criteria " + params.attributeSearch);
+        };
 	}
 
 	private boolean conceptHasAttributeType(Concept c, Concept attributeType) {
@@ -704,7 +701,7 @@ public class MrcmBuilder implements SnomedConstants {
 	public void findDuplicateTypes(CHARACTERISTIC currentView, String whiteList, boolean includeDescendants, Long typeId) {
 		long conceptsChecked = 0;
 		long duplicatesDetected = 0;
-		Map<String, Map<String, Integer>> duplicateTypeBag = new HashMap<String, Map<String, Integer>>();
+		Map<String, Map<String, Integer>> duplicateTypeBag = new HashMap<>();
 		for (Concept thisConcept : Concept.getAllConcepts(currentView)) {
 			for (RelationshipGroup thisGroup : thisConcept.getGroups()){
 				// Not worried about duplicate types in group 0
@@ -729,12 +726,9 @@ public class MrcmBuilder implements SnomedConstants {
 
 		for (final Map.Entry<String, Map<String, Integer>> entry : duplicateTypeBag.entrySet()) {
 			print(Description.getFormattedConcept(Long.parseLong(entry.getKey())), "");
-			String[] values = entry.getValue().keySet().toArray(new String[entry.getValue().size()]);
-			Arrays.sort(values, new Comparator<String>() {
-				public int compare(String o1, String o2) {
-					return entry.getValue().get(o1).intValue() - entry.getValue().get(o2).intValue();
-				}
-			});
+			String[] values = new String[entry.getValue().size()];
+			values = entry.getValue().keySet().toArray(values);
+			Arrays.sort(values, Comparator.comparingInt(o -> entry.getValue().get(o)));
 
 			for (String thisValueDuplicate : values) {
 				String[] duplicatedElements = thisValueDuplicate.split(",");
@@ -755,7 +749,7 @@ public class MrcmBuilder implements SnomedConstants {
 			}
 			for (Relationship comparisonAttribute : thisGroup.getAttributes()) {
 				if (thisAttribute.getTypeId().equals(comparisonAttribute.getTypeId()) || (
-						includeDescendants == true && thisAttribute.getType().getParents().contains(comparisonAttribute.getType()))){
+						includeDescendants && thisAttribute.getType().getParents().contains(comparisonAttribute.getType()))){
 					if (!thisAttribute.getDestinationId().equals(comparisonAttribute.getDestinationId())) {
 						print ("Found duplicate attribute types in concept: " + Description.getFormattedConcept(thisAttribute.getSourceId()),"");
 						print(thisAttribute.toPrettyString(), "");
@@ -763,17 +757,13 @@ public class MrcmBuilder implements SnomedConstants {
 
 						// Have we seen this attribute type before?
 						String valueCombo = thisAttribute.getDestinationId() + "," + comparisonAttribute.getDestinationId();
-						Map<String, Integer> valueCounts = duplicateTypeBag.get(thisAttribute.getTypeId().toString());
-						if (valueCounts == null) {
-							valueCounts = new HashMap<String, Integer>();
-							duplicateTypeBag.put(thisAttribute.getTypeId().toString(), valueCounts);
-						}
-						// Now have we see this attribute type + value combination before?
+                        Map<String, Integer> valueCounts = duplicateTypeBag.computeIfAbsent(thisAttribute.getTypeId().toString(), k -> new HashMap<>());
+                        // Now have we see this attribute type + value combination before?
 						Integer thisCounter = valueCounts.get(valueCombo);
 						if (thisCounter == null) {
-							thisCounter = new Integer(0);
+							thisCounter = 0;
 						}
-						thisCounter = new Integer(thisCounter.intValue() + 1);
+						thisCounter = thisCounter + 1;
 						valueCounts.put(valueCombo, thisCounter);
 						return 1;
 					}
@@ -843,9 +833,10 @@ public class MrcmBuilder implements SnomedConstants {
 
 			boolean containsAllTerms = true;
 			for (String thisWord : searchTerms) {
-				if (!thisDescription.contains(" " + thisWord + " ")) {
-					containsAllTerms = false;
-				}
+                if (!thisDescription.contains(" " + thisWord + " ")) {
+                    containsAllTerms = false;
+                    break;
+                }
 			}
 
 			if (containsAllTerms) {

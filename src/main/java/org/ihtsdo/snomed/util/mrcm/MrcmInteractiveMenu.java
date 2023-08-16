@@ -20,7 +20,7 @@ public class MrcmInteractiveMenu {
 	
 	private static CHARACTERISTIC currentView = CHARACTERISTIC.INFERRED;
 	
-	private static Scanner in = new Scanner(System.in);
+	private static final Scanner in = new Scanner(System.in);
 
 	private static void doHelp() {
 		LOGGER.info("Usage: <concept file location> <stated relationship file location> <inferred realtionship file location> <description file location>");
@@ -34,13 +34,13 @@ public class MrcmInteractiveMenu {
 		reportMemory();
 		GraphLoader g = new GraphLoader(args[0], args[1], args[2], args[3]);
 		printn("Load full RF2 line items (for Delta Generation)? Y/N: [N] ");
-		boolean loadRF2Items = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
+		boolean loadRF2Items = in.nextLine().trim().equalsIgnoreCase("Y");
 		g.loadRelationships(loadRF2Items);
 		reportMemory();
 		new MrcmInteractiveMenu().start();
 	}
 
-	public void start() throws NumberFormatException, Exception {
+	public void start() throws Exception {
 
 		while (true) {
 			displayMenu();
@@ -53,9 +53,9 @@ public class MrcmInteractiveMenu {
 					break;
 				case "c":
 					printn("Restrict to Stated Issues Only? Y/N: ");
-					boolean statedIssuesOnly = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
+					boolean statedIssuesOnly = in.nextLine().trim().equalsIgnoreCase("Y");
 					printn("New Issues Only? Y/N: ");
-					boolean newIssuesOnly = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
+					boolean newIssuesOnly = in.nextLine().trim().equalsIgnoreCase("Y");
 					new MrcmBuilder().findCrossovers(currentView, statedIssuesOnly, newIssuesOnly);
 					break;
 				case "d":
@@ -73,7 +73,7 @@ public class MrcmInteractiveMenu {
 					String typeIdStr = in.nextLine().trim();
 					Long typeId = typeIdStr.length() == 0 ? null : Long.parseLong(typeIdStr);
 					printn("Include descendents of type? Y/N: ");
-					boolean includeDescendants = in.nextLine().trim().equalsIgnoreCase("Y") ? true : false;
+					boolean includeDescendants = in.nextLine().trim().equalsIgnoreCase("Y");
 					printn("Whitelist? eg 127489000, 246093002, 363702006: ");
 					String whiteList = in.nextLine().trim();
 					new MrcmBuilder().findDuplicateTypes(currentView, whiteList, includeDescendants, typeId);
@@ -124,7 +124,7 @@ public class MrcmInteractiveMenu {
 					break;
 				case "u":
 					printn("Enter value to search for: ");
-					long targetValue = Long.valueOf(in.nextLine().trim());
+					long targetValue = Long.parseLong(in.nextLine().trim());
 					new MrcmBuilder().findConceptsUsingAttributeValue(targetValue, currentView);
 					break;
 				case "v":
@@ -145,39 +145,41 @@ public class MrcmInteractiveMenu {
 
 	private void getAdHocMenuResponse(Scanner in) throws IOException, SnomedUtilException {
 		String functionChosen = in.nextLine().trim();
+		long hierarchySCTID;
 		switch (functionChosen) {
-			case "a": 
-				printn("Found in which hierarchy? (eg 40733004 |Infectious disease (disorder)|)");
-				long hierarchySCTID = Long.parseLong(in.nextLine().trim());
-				new AdHocQueries("descendents_with_stated_fd_parents").conceptsWithStatedFDParent(hierarchySCTID);
-				break;
-			case "b": 
-				printn("Found in which hierarchy? (eg 40733004 |Infectious disease (disorder)|) ");
+            case "a" -> {
+                printn("Found in which hierarchy? (eg 40733004 |Infectious disease (disorder)|)");
 				hierarchySCTID = Long.parseLong(in.nextLine().trim());
-				printn("First attribute type? (eg 370135005 |Pathological process (attribute)|) ");
-				long attribute1 = Long.parseLong(in.nextLine().trim());
-				printn("Second attribute type? (eg 246075003 |Causative agent (attribute)|) ");
-				long attribute2 = Long.parseLong(in.nextLine().trim());
-				new AdHocQueries("attributes_not_grouped_together").attributesNotGroupedTogether(hierarchySCTID, attribute1, attribute2, currentView);
-				break;
-			case "p":
-				String filePath = "/Users/Peter/Google Drive/005_Ad_hoc_queries/018_Anatomy_Restate_PartOf/sctids_for_restating_partOfs.txt";
-				printn("Path of file containing 02 sctids [" + filePath + "] ");
-				String altFilePath = in.nextLine().trim();
-				if (!altFilePath.isEmpty()) {
-					filePath = altFilePath;
-				}
-				printn("Optional effective date? ");
-				String effectiveTime = in.nextLine().trim();
-				new AdHocQueries("stated_part_ofs").generateStatedPartOfs(filePath, effectiveTime);
-				break;
-			case "s":
-				printn("What directory path contains the pattern json files?");
-				String patternDir = in.nextLine().trim();
-				printn("Output to which directory?");
-				String outputDir = in.nextLine().trim();
-				new PatternCollator(patternDir, outputDir).collatePatternOutput();
-		}
+                new AdHocQueries("descendents_with_stated_fd_parents").conceptsWithStatedFDParent(hierarchySCTID);
+            }
+            case "b" -> {
+                printn("Found in which hierarchy? (eg 40733004 |Infectious disease (disorder)|) ");
+                hierarchySCTID = Long.parseLong(in.nextLine().trim());
+                printn("First attribute type? (eg 370135005 |Pathological process (attribute)|) ");
+                long attribute1 = Long.parseLong(in.nextLine().trim());
+                printn("Second attribute type? (eg 246075003 |Causative agent (attribute)|) ");
+                long attribute2 = Long.parseLong(in.nextLine().trim());
+                new AdHocQueries("attributes_not_grouped_together").attributesNotGroupedTogether(hierarchySCTID, attribute1, attribute2, currentView);
+            }
+            case "p" -> {
+                String filePath = "/Users/Peter/Google Drive/005_Ad_hoc_queries/018_Anatomy_Restate_PartOf/sctids_for_restating_partOfs.txt";
+                printn("Path of file containing 02 sctids [" + filePath + "] ");
+                String altFilePath = in.nextLine().trim();
+                if (!altFilePath.isEmpty()) {
+                    filePath = altFilePath;
+                }
+                printn("Optional effective date? ");
+                String effectiveTime = in.nextLine().trim();
+                new AdHocQueries("stated_part_ofs").generateStatedPartOfs(filePath, effectiveTime);
+            }
+            case "s" -> {
+                printn("What directory path contains the pattern json files?");
+                String patternDir = in.nextLine().trim();
+                printn("Output to which directory?");
+                String outputDir = in.nextLine().trim();
+                new PatternCollator(patternDir, outputDir).collatePatternOutput();
+            }
+        }
 		
 	}
 

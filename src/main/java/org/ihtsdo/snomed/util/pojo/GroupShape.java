@@ -1,7 +1,6 @@
 package org.ihtsdo.snomed.util.pojo;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,13 +9,13 @@ import java.util.concurrent.ConcurrentMap;
 public class GroupShape {
 
 	String id;
-	Set<Integer> partialMatch = new HashSet<Integer>();
-	Set<Integer> abstractMatch = new HashSet<Integer>();
+	Set<Integer> partialMatch = new HashSet<>();
+	Set<Integer> abstractMatch = new HashSet<>();
 	int popularity = 0;
-	Set<Concept> shapeStructure = new HashSet<Concept>();
-	Set<Concept> examples = new HashSet<Concept>();;
+	Set<Concept> shapeStructure = new HashSet<>();
+	Set<Concept> examples = new HashSet<>();
 
-	static ConcurrentMap<String, GroupShape> knownShapes = new ConcurrentHashMap<String, GroupShape>();
+    static ConcurrentMap<String, GroupShape> knownShapes = new ConcurrentHashMap<>();
 
 	// For a match with a more abstract (ie parent) type, we may go more
 	// than one ancestor up the hierarchy. But this hasn't been needed yet.
@@ -119,7 +118,7 @@ public class GroupShape {
 				out(Description.getFormattedConcept(example.getSctId()), false);
 				count++;
 				if (count >= 5) {
-					break limit_examples;
+					break;
 				}
 			}
 			out("]", true);
@@ -146,11 +145,7 @@ public class GroupShape {
 
 	private static GroupShape[] knownShapesSorted() {
 		GroupShape[] shapes = knownShapes.values().toArray(new GroupShape[0]);
-		Arrays.sort(shapes, new Comparator<GroupShape>() {
-			public int compare(GroupShape o1, GroupShape o2) {
-				return o2.popularity - o1.popularity;
-			}
-		});
+		Arrays.sort(shapes, (o1, o2) -> o2.popularity - o1.popularity);
 		return shapes;
 	}
 

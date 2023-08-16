@@ -6,17 +6,17 @@ public interface SnomedConstants {
 		FULLY_DEFINED("F"),
 		PRIMITIVE("P"),
 		ALL("A");
-		private String shortForm;
+		private final String shortForm;
 		DefinitionStatus(String shortForm){
 			this.shortForm = shortForm;
 		}
 		public static DefinitionStatus getStatus(String shortForm) {
-			switch (shortForm.toUpperCase()) {
-			case("F") : return FULLY_DEFINED;
-			case("P") : return PRIMITIVE;
-			case("A") : return ALL;
-			default : return null;
-			}
+            return switch (shortForm.toUpperCase()) {
+                case ("F") -> FULLY_DEFINED;
+                case ("P") -> PRIMITIVE;
+                case ("A") -> ALL;
+                default -> null;
+            };
 		}
 	}
 }

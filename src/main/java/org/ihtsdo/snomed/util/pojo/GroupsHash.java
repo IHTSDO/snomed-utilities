@@ -11,10 +11,10 @@ public class GroupsHash {
 
 	String id;
 	int popularity = 0;
-	Set<GroupShape> hashStructure = new HashSet<GroupShape>();
-	Set<Concept> examples = new HashSet<Concept>();
+	Set<GroupShape> hashStructure = new HashSet<>();
+	Set<Concept> examples = new HashSet<>();
 
-	static ConcurrentMap<String, GroupsHash> knownHashes = new ConcurrentHashMap<String, GroupsHash>();
+	static ConcurrentMap<String, GroupsHash> knownHashes = new ConcurrentHashMap<>();
 
 	// For a match with a more abstract (ie parent) type, we may go more
 	// than one ancestor up the hierarchy. But this hasn't been needed yet.
@@ -96,7 +96,7 @@ public class GroupsHash {
 				out(Description.getFormattedConcept(example.getSctId()), false);
 				count++;
 				if (count > 5) {
-					break limit_examples;
+					break;
 				}
 			}
 			out("]", true);
@@ -104,12 +104,9 @@ public class GroupsHash {
 	}
 
 	private static GroupsHash[] knownHashesSorted() {
-		GroupsHash[] hashes = knownHashes.values().toArray(new GroupsHash[knownHashes.size()]);
-		Arrays.sort(hashes, new Comparator<GroupsHash>() {
-			public int compare(GroupsHash o1, GroupsHash o2) {
-				return o1.popularity - o2.popularity;
-			}
-		});
+		GroupsHash[] hashes = new GroupsHash[knownHashes.size()];
+		hashes = knownHashes.values().toArray(hashes);
+		Arrays.sort(hashes, Comparator.comparingInt(o -> o.popularity));
 		return hashes;
 	}
 

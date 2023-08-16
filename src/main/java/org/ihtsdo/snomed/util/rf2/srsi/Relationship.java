@@ -12,7 +12,7 @@ public class Relationship implements Comparable<Relationship> {
 
 
 	// id effectiveTime active moduleId sourceId destinationId relationshipGroup typeId characteristicTypeId modifierId
-	public static final Long ISA_ID = new Long(116680003);
+	public static final Long ISA_ID = 116680003L;
 	public static final String CHARACTERISTIC_STATED_SCTID = "900000000000010007";
 	public static final String FIELD_DELIMITER = "\t";
 	public static final String LINE_DELIMITER = "\r\n";
@@ -20,11 +20,11 @@ public class Relationship implements Comparable<Relationship> {
 	public static final String INACTIVE_FLAG = "0";
 	public static final String HEADER_ROW = "id\teffectiveTime\tactive\tmoduleId\tsourceId\tdestinationId\trelationshipGroup\ttypeId\tcharacteristicTypeId\tmodifierId\r\n";
 
-	public static enum CHARACTERISTIC {
+	public enum CHARACTERISTIC {
 		STATED, INFERRED, ADDITIONAL
-	};
+	}
 
-	private static Type5UuidFactory type5UuidFactory;
+    private static final Type5UuidFactory type5UuidFactory;
 
 	static {
 		try {
@@ -38,9 +38,9 @@ public class Relationship implements Comparable<Relationship> {
 	Concept sourceConcept;
 	Concept destinationConcept;
 
-	private Long typeId;
-	private String uuid;
-	private int group;
+	private final Long typeId;
+	private final String uuid;
+	private final int group;
 	private Relationship replacement = null;
 	private Relationship isReplacementFor = null;
 	private int replacementNumber = 0;
@@ -66,13 +66,13 @@ public class Relationship implements Comparable<Relationship> {
 
 	public static final String STATED_UUID_MODIFIER = "S";
 	
-	private String[] lineValues;
+	private final String[] lineValues;
 
 	// Was originally splitting the string in the constructor, but expensive to create object
 	// if active flag is zero, so check this before passing in
 	public Relationship(String[] lineValues, CHARACTERISTIC characteristic) throws Exception {
 		this.lineValues = lineValues;
-		typeId = new Long(getField(IDX_TYPEID));
+		typeId = Long.valueOf(getField(IDX_TYPEID));
 		group = Integer.parseInt(getField(IDX_RELATIONSHIPGROUP));
 		uuid = type5UuidFactory.get(
 				getTripleString() 
@@ -176,11 +176,11 @@ public class Relationship implements Comparable<Relationship> {
 	}
 
 	public Long getSourceId() {
-		return new Long(lineValues[IDX_SOURCEID]);
+		return Long.valueOf(lineValues[IDX_SOURCEID]);
 	}
 
 	public Long getDestinationId() {
-		return new Long(lineValues[IDX_DESTINATIONID]);
+		return Long.valueOf(lineValues[IDX_DESTINATIONID]);
 	}
 
 	public boolean isType(Long thisType) {
@@ -192,7 +192,7 @@ public class Relationship implements Comparable<Relationship> {
 	}
 
 	public String getRF2(String effectiveTime, String activeFlag, String chacteristicTypeId, boolean wipeSCTID) {
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		// Output all columns, replacing effectiveTime, active and chacteristicTypeId to passed in values
 		for (int columnIdx = 0; columnIdx <= MAX_COLUMN; columnIdx++) {
 			if (columnIdx == IDX_ID) {

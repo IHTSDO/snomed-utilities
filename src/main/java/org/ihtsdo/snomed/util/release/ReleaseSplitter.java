@@ -13,10 +13,7 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.snomed.util.SnomedUtilException;
-import org.ihtsdo.snomed.util.mrcm.MrcmInteractiveMenu;
 import org.ihtsdo.util.GlobalUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
@@ -26,7 +23,7 @@ public class ReleaseSplitter {
 	
 	File archive;
 	int splitCount;
-	List <File> splitArchives = new ArrayList<File>();
+	List <File> splitArchives = new ArrayList<>();
 
 	private static void doHelp() {
 		print("Usage: <release archive file location> <Number of pieces to split into>");
@@ -112,10 +109,10 @@ public class ReleaseSplitter {
 		if (lines.size() > splitCount) {
 			chunks = Lists.partition(lines, chunkSize);
 		} else {
-			chunks = new ArrayList<List<String>>();
+			chunks = new ArrayList<>();
 			chunks.add(lines);
 			for (int x=1; x < splitCount; x++) {
-				chunks.add(new ArrayList<String>());
+				chunks.add(new ArrayList<>());
 			}
 		}
 		return chunks;

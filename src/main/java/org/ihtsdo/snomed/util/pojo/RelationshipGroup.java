@@ -8,12 +8,10 @@ import java.util.TreeSet;
 
 import org.ihtsdo.snomed.util.Type5UuidFactory;
 
-import com.google.common.collect.Sets;
-
 public class RelationshipGroup {
 
-	private static Type5UuidFactory type5UuidFactory;
-	private static String EMTPTY_SHAPE = "Empty Shape";
+	private static final Type5UuidFactory type5UuidFactory;
+	private static final String EMTPTY_SHAPE = "Empty Shape";
 	private static final int IMMEDIATE_PARENT = 1;
 	static {
 		try {
@@ -27,9 +25,9 @@ public class RelationshipGroup {
 		this.number = number;
 	}
 
-	private Set<Relationship> attributes = new TreeSet<Relationship>();
+	private final Set<Relationship> attributes = new TreeSet<>();
 	private GroupShape basicGroupShape = null;
-	private int number;
+	private final int number;
 	private GroupShape mostPopularShape;
 
 	public void addAttribute(Relationship r) {
@@ -44,7 +42,7 @@ public class RelationshipGroup {
 	// uniquely identify the shape of a group
 	public GroupShape getGroupBasicShape() throws UnsupportedEncodingException {
 		if (basicGroupShape == null) {
-			String groupTypesUUID = getGroupAbstractShape(new TreeSet<Integer>()); // default - no type made more general
+			String groupTypesUUID = getGroupAbstractShape(new TreeSet<>()); // default - no type made more general
 			basicGroupShape = GroupShape.get(groupTypesUUID);
 			basicGroupShape.setShapeStructure(getAttributeTypes());
 		} 
@@ -52,7 +50,7 @@ public class RelationshipGroup {
 	}
 	
 	public String getGroupAbstractShape(Set<Integer> indexCombination) throws UnsupportedEncodingException {
-		ArrayList<Relationship> attributeList = new ArrayList<Relationship>(attributes);
+		ArrayList<Relationship> attributeList = new ArrayList<>(attributes);
 		String result;
 		if (attributeList.size() > 0) {
 			String typesConcatonated = "";
@@ -80,7 +78,7 @@ public class RelationshipGroup {
 	}
 
 	public String getGroupPartialShape(Set<Integer> indexCombination) throws UnsupportedEncodingException {
-		ArrayList<Relationship> attributeList = new ArrayList<Relationship>(attributes);
+		ArrayList<Relationship> attributeList = new ArrayList<>(attributes);
 		String result;
 		if (attributeList.size() > 0 && indexCombination.size() > 0) {
 			String typesConcatonated = "";
@@ -99,9 +97,9 @@ public class RelationshipGroup {
 
 	public String getGroupPartialAbstractShape(Set<Integer> thisAttributeCombination, Set<Integer> thisAbstractCombination)
 			throws UnsupportedEncodingException {
-		ArrayList<Relationship> attributeList = new ArrayList<Relationship>(attributes);
+		ArrayList<Relationship> attributeList = new ArrayList<>(attributes);
 		String result;
-		if (attributeList.size() > 0 && thisAttributeCombination.size() > 0) {
+		if (!attributeList.isEmpty() && !thisAttributeCombination.isEmpty()) {
 			String typesConcatonated = "";
 			for (int x = 0; x < attributeList.size(); x++) {
 				Relationship r = attributeList.get(x);
@@ -133,7 +131,7 @@ public class RelationshipGroup {
 	}
 
 	public Set<Concept> getAttributeTypes() {
-		Set<Concept> attributeTypes = new HashSet<Concept>();
+		Set<Concept> attributeTypes = new HashSet<>();
 		for (Relationship thisAttribute : attributes) {
 			attributeTypes.add(thisAttribute.getType());
 		}

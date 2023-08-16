@@ -22,11 +22,11 @@ import com.google.gson.JsonSyntaxException;
 
 public class PatternCollator {
 
-	private File patternDir;
-	private File outputDir;
+	private final File patternDir;
+	private final File outputDir;
 	private static final String JSON = ".json";
-	private String outputFileName;
-	private String[] headers = new String[] {"PatternName","Concept","FSN (commas stripped)","hasChanged","isNew","Hierarchy1","Hierarchy2","Hierarchy3"};
+	private final String outputFileName;
+	private final String[] headers = new String[] {"PatternName","Concept","FSN (commas stripped)","hasChanged","isNew","Hierarchy1","Hierarchy2","Hierarchy3"};
 	private int duplicatesRemoved = 0;
 	
 	public PatternCollator (String patternDir, String outputDir) {
@@ -60,7 +60,7 @@ public class PatternCollator {
 	}
 
 	private void collateFile(File file) throws JsonSyntaxException, JsonIOException, IOException {
-		Set<String> conceptsSeen = new HashSet<String>();
+		Set<String> conceptsSeen = new HashSet<>();
 		String pattern = file.getName().replace(JSON, "").replace("_", " ");
 		print ("Processing " + pattern);
 		
