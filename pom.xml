@@ -128,15 +128,26 @@
         <repository>
             <id>ihtsdo-releases</id>
             <name>IHTSDO Public Nexus Releases</name>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
             <url>https://nexus3.ihtsdotools.org/repository/maven-releases/</url>
         </repository>
         <repository>
             <id>ihtsdo-snapshots</id>
             <name>IHTSDO Public Nexus Snapshots</name>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
             <url>https://nexus3.ihtsdotools.org/repository/maven-snapshots/</url>
         </repository>
     </repositories>
-
     <distributionManagement>
         <repository>
             <id>ihtsdo-public-nexus</id>
