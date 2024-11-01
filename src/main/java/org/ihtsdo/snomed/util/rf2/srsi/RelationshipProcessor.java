@@ -1,30 +1,16 @@
 package org.ihtsdo.snomed.util.rf2.srsi;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.ihtsdo.snomed.util.rf2.srsi.Relationship.CHARACTERISTIC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.apache.commons.io.output.NullOutputStream.INSTANCE;
 
 /**
  * Usage java -classpath /Users/Peter/code/snomed-utilities/target/snomed-utilities-1.0.10-SNAPSHOT.jar
@@ -462,7 +448,7 @@ public class RelationshipProcessor {
 		LOGGER.info("Writing file to {} with effective time {}", (dryRun? "Dry Run Only" : outputFile), outputEffectiveTime);
 
 		try (Writer writer = new BufferedWriter(
-				new OutputStreamWriter(dryRun ? NULL_OUTPUT_STREAM: new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
+				new OutputStreamWriter(dryRun ? INSTANCE: new FileOutputStream(outputFile), StandardCharsets.UTF_8))) {
 			// Loop through all stated relationships and disable the replaced ones
 			// and output the replacements all with effective time which matches the output file
 
