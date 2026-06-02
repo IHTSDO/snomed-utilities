@@ -21,6 +21,11 @@
         <version>3.11.0</version>
     </parent>
 
+    <properties>
+        <java.version>25</java.version>
+        <maven.compiler.release>25</maven.compiler.release>
+    </properties>
+
     <scm>
         <connection>scm:git:git@github.com:IHTSDO/snomed-utilities.git</connection>
         <developerConnection>scm:git:git@github.com:IHTSDO/snomed-utilities.git</developerConnection>
